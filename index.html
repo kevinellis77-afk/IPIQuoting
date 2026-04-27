@@ -3308,7 +3308,7 @@ const ADMIN_UNLOCK_TTL_MS = 30 * 60 * 1000;
 const ADMIN_UNLOCK_STORAGE_KEY = 'ipi-admin-unlock-expiry-v1';
 const ADMIN_PASSWORD_HASH = 'cf89bbaebb92151d2728f49f2038d8676f14e8ecf9ec529a0587b03cf94251d4';
 const ADMIN_PASSWORD_PLAINTEXT_FALLBACK = 'ipi-admin-unlock';
-const EMBEDDED_PRODUCT_CATALOGUE = PRODUCTS.map(function(product) { return Object.assign({}, product); });
+const DEFAULT_PRODUCT_CATALOGUE = PRODUCTS.map(function(product) { return Object.assign({}, product); });
 const productCatalogueState = {
   sourceType: 'embedded',
   sourceLabel: 'Embedded baseline',
@@ -3969,11 +3969,9 @@ function replaceEmbeddedBaselineFromPastedData(rawText) {
 
   PRODUCTS.splice(0, PRODUCTS.length);
   parsed.forEach(function(p) { PRODUCTS.push(p); });
-  EMBEDDED_PRODUCT_CATALOGUE.splice(0, EMBEDDED_PRODUCT_CATALOGUE.length);
-  parsed.forEach(function(p) { EMBEDDED_PRODUCT_CATALOGUE.push(Object.assign({}, p)); });
   quoteItems = [];
-  clearUploadedCatalogueStorage();
-  setProductCatalogueSource({ sourceType: 'embedded', sourceLabel: 'Embedded baseline · ' + loadSummary, sourceDate: new Date().toISOString() }, { clearPersisted: true });
+  persistProductCatalogue();
+  setProductCatalogueSource({ sourceType: 'uploaded', sourceLabel: 'Uploaded CSV · ' + loadSummary, sourceDate: new Date().toISOString() }, { persist: true });
 
   applyDerivedProductAttributes();
   NORMALIZED_PRODUCT_CACHE = {};
@@ -4006,12 +4004,12 @@ function replaceEmbeddedBaselineFromPastedData(rawText) {
 function resetProductCatalogueToBaseline() {
   if (!requireAdminUnlock('Reset product catalogue to baseline')) return;
   PRODUCTS.splice(0, PRODUCTS.length);
-  EMBEDDED_PRODUCT_CATALOGUE.forEach(function(product) {
+  DEFAULT_PRODUCT_CATALOGUE.forEach(function(product) {
     PRODUCTS.push(Object.assign({}, product));
   });
   quoteItems = [];
-  clearUploadedCatalogueStorage();
-  setProductCatalogueSource({ sourceType: 'embedded', sourceLabel: 'Embedded baseline', sourceDate: null }, { clearPersisted: true });
+  persistProductCatalogue();
+  setProductCatalogueSource({ sourceType: 'embedded', sourceLabel: 'Embedded baseline', sourceDate: null }, { persist: true });
   appendAuditEvent({
     eventType: 'baseline_reset',
     status: 'success',
