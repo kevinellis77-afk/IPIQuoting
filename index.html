@@ -2979,6 +2979,7 @@
       <div class="email-field" style="margin-bottom:0">
         <label for="adminUnlockPassword">Admin Password</label>
         <input id="adminUnlockPassword" type="password" placeholder="Enter password" autocomplete="current-password">
+        <div class="meta-field-helper" style="margin-top:8px;">Interim access only: local password unlock is temporary and will be replaced by Microsoft SSO.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -3308,6 +3309,7 @@ const ADMIN_UNLOCK_TTL_MS = 30 * 60 * 1000;
 const ADMIN_UNLOCK_STORAGE_KEY = 'ipi-admin-unlock-expiry-v1';
 const ADMIN_PASSWORD_HASH = 'cf89bbaebb92151d2728f49f2038d8676f14e8ecf9ec529a0587b03cf94251d4';
 const ADMIN_PASSWORD_PLAINTEXT_FALLBACK = 'ipi-admin-unlock';
+// TODO(auth): Replace local admin password unlock with Microsoft SSO-backed authorization.
 const EMBEDDED_PRODUCT_CATALOGUE = PRODUCTS.map(function(product) { return Object.assign({}, product); });
 const productCatalogueState = {
   sourceType: 'embedded',
@@ -8778,6 +8780,7 @@ window.addEventListener('DOMContentLoaded', initPartnerPriceList);
           <div class="help-tip"><strong>Product detail panel</strong>Click the ⓘ button on any product to see a full description, specs, partner pricing, and "often paired with" suggestions.</div>
           <div class="help-tip"><strong>Notes appear on exports</strong>Anything you type in Notes &amp; Terms shows as a formatted block at the bottom of the printed PDF and emailed quote.</div>
           <div class="help-tip"><strong>Data is stored locally</strong>All quotes are saved to your browser's local storage — no account needed. Clear browser data will remove saved quotes.</div>
+          <div class="help-tip"><strong>Admin unlock is interim</strong>The current admin password unlock is temporary local access and will migrate to Microsoft SSO.</div>
         </div>
       </div>
 
