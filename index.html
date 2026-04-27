@@ -3971,11 +3971,9 @@ function replaceEmbeddedBaselineFromPastedData(rawText) {
 
   PRODUCTS.splice(0, PRODUCTS.length);
   parsed.forEach(function(p) { PRODUCTS.push(p); });
-  EMBEDDED_PRODUCT_CATALOGUE.splice(0, EMBEDDED_PRODUCT_CATALOGUE.length);
-  parsed.forEach(function(p) { EMBEDDED_PRODUCT_CATALOGUE.push(Object.assign({}, p)); });
   quoteItems = [];
-  clearUploadedCatalogueStorage();
-  setProductCatalogueSource({ sourceType: 'embedded', sourceLabel: 'Embedded baseline · ' + loadSummary, sourceDate: new Date().toISOString() }, { clearPersisted: true });
+  persistProductCatalogue();
+  setProductCatalogueSource({ sourceType: 'uploaded', sourceLabel: 'Uploaded CSV · ' + loadSummary, sourceDate: new Date().toISOString() }, { persist: true });
 
   applyDerivedProductAttributes();
   NORMALIZED_PRODUCT_CACHE = {};
@@ -4008,12 +4006,12 @@ function replaceEmbeddedBaselineFromPastedData(rawText) {
 function resetProductCatalogueToBaseline() {
   if (!requireAdminUnlock('Reset product catalogue to baseline')) return;
   PRODUCTS.splice(0, PRODUCTS.length);
-  EMBEDDED_PRODUCT_CATALOGUE.forEach(function(product) {
+  DEFAULT_PRODUCT_CATALOGUE.forEach(function(product) {
     PRODUCTS.push(Object.assign({}, product));
   });
   quoteItems = [];
-  clearUploadedCatalogueStorage();
-  setProductCatalogueSource({ sourceType: 'embedded', sourceLabel: 'Embedded baseline', sourceDate: null }, { clearPersisted: true });
+  persistProductCatalogue();
+  setProductCatalogueSource({ sourceType: 'embedded', sourceLabel: 'Embedded baseline', sourceDate: null }, { persist: true });
   appendAuditEvent({
     eventType: 'baseline_reset',
     status: 'success',
@@ -4023,6 +4021,36 @@ function resetProductCatalogueToBaseline() {
   });
   refreshProductCatalogueViews();
   showToast('✓ Product catalogue reset (' + PRODUCTS.length + ' rows) — source: Embedded baseline');
+}
+
+function deleteAllProductsFromCatalogue() {
+  if (!requireAdminUnlock('Delete all products from catalogue')) return;
+  if (!PRODUCTS.length) {
+    showToast('Catalogue is already empty');
+    return;
+  }
+  const confirmed = confirm('Delete all products from the catalogue? This cannot be undone in this session.');
+  if (!confirmed) return;
+
+  const deletedCount = PRODUCTS.length;
+  PRODUCTS.splice(0, PRODUCTS.length);
+  quoteItems = [];
+  clearUploadedCatalogueStorage();
+  setProductCatalogueSource({
+    sourceType: 'embedded',
+    sourceLabel: 'Catalogue manually cleared',
+    sourceDate: new Date().toISOString()
+  }, { clearPersisted: true });
+  appendAuditEvent({
+    eventType: 'product_catalogue_delete_all',
+    status: 'success',
+    sourceLabel: productCatalogueState.sourceLabel,
+    sourceDate: productCatalogueState.sourceDate,
+    rowCount: 0,
+    deletedCount: deletedCount
+  });
+  refreshProductCatalogueViews();
+  showToast('✓ Deleted all products (' + deletedCount + ' removed) — upload CSV to reload catalogue');
 }
 
 function handleProductImportFile(event) {
@@ -7864,6 +7892,10 @@ function updateToolbarState() {
               '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
               'Upload Product CSV' +
             '</button>' +
+            '<button class="toolbar-menu-item" onclick="deleteAllProductsFromCatalogue(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M8 6v14h8V6"></path><path d="M10 6V4h4v2"></path></svg>' +
+              'Delete all products' +
+            '</button>' +
             '<button class="toolbar-menu-item" onclick="resetProductCatalogueToBaseline(); closeToolbarMenus();">' +
               '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>' +
               'Reset to baseline product catalogue' +
@@ -7912,6 +7944,10 @@ function updateToolbarState() {
             '<button class="toolbar-menu-item" onclick="openProductImportPicker(); closeToolbarMenus();">' +
               '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
               'Upload Product CSV' +
+            '</button>' +
+            '<button class="toolbar-menu-item" onclick="deleteAllProductsFromCatalogue(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M8 6v14h8V6"></path><path d="M10 6V4h4v2"></path></svg>' +
+              'Delete all products' +
             '</button>' +
           '</div>' +
           '<div class="toolbar-menu-group">' +
