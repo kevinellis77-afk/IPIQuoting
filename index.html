@@ -2581,6 +2581,7 @@
       </button>
       <div class="toolbar-menu-panel hidden" id="actionsMenu"></div>
     </div>
+    <button class="btn btn-outline" id="adminUnlockBtn" onclick="handleAdminUnlockButtonClick()">Unlock Admin</button>
     <input type="file" id="productCsvUpload" accept=".csv,text/csv" class="hidden" onchange="handleProductImportFile(event)">
     <span id="saveVersionBtnLabel" class="hidden">Save v1</span>
     <button class="help-btn" onclick="openHelpModal()" title="Help & Guide">?</button>
@@ -2925,6 +2926,29 @@
   </div>
 </div>
 
+<!-- Admin Unlock Modal -->
+<div class="modal-overlay hidden" id="adminUnlockModal" onclick="closeAdminUnlockModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:420px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Unlock Admin</div>
+        <div class="modal-subtitle">Enter admin password to enable maintenance actions.</div>
+      </div>
+      <button class="modal-close" onclick="closeAdminUnlockModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="email-field" style="margin-bottom:0">
+        <label for="adminUnlockPassword">Admin Password</label>
+        <input id="adminUnlockPassword" type="password" placeholder="Enter password" autocomplete="current-password">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAdminUnlockModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAdminUnlock()">Unlock</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── PRODUCT DATA ───────────────────────────────────────────────────────────
 const PRODUCTS = [
@@ -3218,12 +3242,75 @@ const PRODUCT_CSV_HEADERS = [
 const PRODUCT_CSV_REQUIRED_HEADERS = ['product_id', 'product_e', 'category', 'charge_type', 'list_rrp', 'cost', 'threshold'];
 const PRODUCT_CATALOGUE_STORAGE_KEY = 'ipi-partner-quote-products-v1';
 const PRODUCT_CATALOGUE_META_STORAGE_KEY = 'ipi-partner-quote-products-meta-v1';
+const ADMIN_UNLOCK_TTL_MS = 30 * 60 * 1000;
+const ADMIN_UNLOCK_STORAGE_KEY = 'ipi-admin-unlock-expiry-v1';
+const ADMIN_PASSWORD_HASH = 'cf89bbaebb92151d2728f49f2038d8676f14e8ecf9ec529a0587b03cf94251d4';
+const ADMIN_PASSWORD_PLAINTEXT_FALLBACK = 'ipi-admin-unlock';
 const EMBEDDED_PRODUCT_CATALOGUE = PRODUCTS.map(function(product) { return Object.assign({}, product); });
 const productCatalogueState = {
   sourceType: 'embedded',
   sourceLabel: 'Embedded baseline',
   sourceDate: null
 };
+
+function isAdminUnlocked() {
+  try {
+    const expiryRaw = sessionStorage.getItem(ADMIN_UNLOCK_STORAGE_KEY);
+    if (!expiryRaw) return false;
+    const expiryMs = Number(expiryRaw);
+    if (!Number.isFinite(expiryMs) || expiryMs <= Date.now()) {
+      sessionStorage.removeItem(ADMIN_UNLOCK_STORAGE_KEY);
+      return false;
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function hashAdminPassword(input) {
+  const text = String(input == null ? '' : input);
+  if (!window.crypto || !window.crypto.subtle || !window.TextEncoder) return '';
+  const bytes = new TextEncoder().encode(text);
+  const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(function(byte) {
+    return byte.toString(16).padStart(2, '0');
+  }).join('');
+}
+
+async function unlockAdmin(passwordInput) {
+  const candidate = String(passwordInput == null ? '' : passwordInput).trim();
+  if (!candidate) return false;
+  let matched = false;
+  try {
+    const hashed = await hashAdminPassword(candidate);
+    matched = !!hashed && hashed === ADMIN_PASSWORD_HASH;
+  } catch (_) {
+    matched = false;
+  }
+  if (!matched && candidate === ADMIN_PASSWORD_PLAINTEXT_FALLBACK) matched = true;
+  if (!matched) return false;
+  try {
+    sessionStorage.setItem(ADMIN_UNLOCK_STORAGE_KEY, String(Date.now() + ADMIN_UNLOCK_TTL_MS));
+  } catch (_) {}
+  updateToolbarState();
+  return true;
+}
+
+function lockAdmin() {
+  try {
+    sessionStorage.removeItem(ADMIN_UNLOCK_STORAGE_KEY);
+  } catch (_) {}
+  updateToolbarState();
+}
+
+function requireAdminUnlock(actionLabel) {
+  if (isAdminUnlocked()) return true;
+  const action = actionLabel || 'This action';
+  showToast('⚠ Admin unlock required for ' + action.toLowerCase());
+  alert('Admin unlock required: ' + action + '.');
+  return false;
+}
 
 const PRODUCT_CSV_HEADER_ALIASES = {
   product_id: ['product_id', 'id', 'sku', 'productcode'],
@@ -3669,6 +3756,9 @@ function extractNormalizedHeadersFromRaw(rawText) {
 }
 
 function replaceEmbeddedBaselineFromPastedData(rawText) {
+  if (!requireAdminUnlock('Replace embedded baseline from pasted data')) {
+    throw new Error('Admin unlock required before replacing embedded baseline data.');
+  }
   const raw = String(rawText == null ? '' : rawText);
   if (!raw.trim()) throw new Error('Paste product CSV/TSV content before applying.');
 
@@ -3725,6 +3815,7 @@ function replaceEmbeddedBaselineFromPastedData(rawText) {
 }
 
 function resetProductCatalogueToBaseline() {
+  if (!requireAdminUnlock('Reset product catalogue to baseline')) return;
   PRODUCTS.splice(0, PRODUCTS.length);
   EMBEDDED_PRODUCT_CATALOGUE.forEach(function(product) {
     PRODUCTS.push(Object.assign({}, product));
@@ -3737,6 +3828,11 @@ function resetProductCatalogueToBaseline() {
 }
 
 function handleProductImportFile(event) {
+  if (!requireAdminUnlock('Upload product CSV')) {
+    const blockedInput = event && event.target;
+    if (blockedInput) blockedInput.value = '';
+    return;
+  }
   const input = event && event.target;
   const file = input && input.files && input.files[0];
   if (!file) return;
@@ -6236,7 +6332,45 @@ function showPasteBaselineValidationError(message) {
   el.classList.remove('hidden');
 }
 
+function openAdminUnlockModal() {
+  const modal = document.getElementById('adminUnlockModal');
+  const input = document.getElementById('adminUnlockPassword');
+  if (!modal || !input) return;
+  input.value = '';
+  modal.classList.remove('hidden');
+  setTimeout(function() { input.focus(); }, 0);
+}
+
+function closeAdminUnlockModal(e) {
+  if (!e || e.target === document.getElementById('adminUnlockModal')) {
+    document.getElementById('adminUnlockModal').classList.add('hidden');
+  }
+}
+
+async function submitAdminUnlock() {
+  const input = document.getElementById('adminUnlockPassword');
+  const password = input ? input.value : '';
+  const unlocked = await unlockAdmin(password);
+  if (!unlocked) {
+    showToast('⚠ Invalid admin password');
+    alert('Invalid admin password.');
+    return;
+  }
+  closeAdminUnlockModal();
+  showToast('✓ Admin unlocked for ' + Math.round(ADMIN_UNLOCK_TTL_MS / 60000) + ' minutes');
+}
+
+function handleAdminUnlockButtonClick() {
+  if (isAdminUnlocked()) {
+    lockAdmin();
+    showToast('✓ Admin locked');
+    return;
+  }
+  openAdminUnlockModal();
+}
+
 function openPasteBaselineModal() {
+  if (!requireAdminUnlock('Paste baseline product data')) return;
   clearPasteBaselineValidationError();
   const textArea = document.getElementById('pasteBaselineTextarea');
   if (textArea) textArea.value = '';
@@ -7335,6 +7469,15 @@ function showTransientCatalogueLoadSummary(count, firstId, lastId) {
 // ─── PARTNER PRICE LIST LAYER ───────────────────────────────────────────────
 function initPartnerPriceList() {
   initializePriceListMultiSelects();
+  const adminUnlockPasswordInput = document.getElementById('adminUnlockPassword');
+  if (adminUnlockPasswordInput) {
+    adminUnlockPasswordInput.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        submitAdminUnlock();
+      }
+    });
+  }
   populatePriceListProfileControls();
   bindPriceListSorting();
   syncPriceListFilterOptions();
@@ -7398,6 +7541,11 @@ document.addEventListener('click', function(e) {
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    const adminUnlockModal = document.getElementById('adminUnlockModal');
+    if (adminUnlockModal && !adminUnlockModal.classList.contains('hidden')) {
+      closeAdminUnlockModal();
+      return;
+    }
     const savedQuotesModal = document.getElementById('savedQuotesModal');
     if (savedQuotesModal && !savedQuotesModal.classList.contains('hidden')) {
       closeSavedQuotesModal();
@@ -7435,10 +7583,14 @@ function updateToolbarState() {
   const workspaceBtn = document.getElementById('workspaceMenuBtn');
   const actionsBtn = document.getElementById('actionsMenuBtn');
   const actionsMenu = document.getElementById('actionsMenu');
-  if (!workspaceBtn || !actionsBtn || !actionsMenu) return;
+  const adminUnlockBtn = document.getElementById('adminUnlockBtn');
+  if (!workspaceBtn || !actionsBtn || !actionsMenu || !adminUnlockBtn) return;
+  const adminUnlocked = isAdminUnlocked();
 
   const workspaceLabel = workspace === 'quote' ? 'Quoting Tool' : (workspace === 'price' ? 'Partner Price List' : 'Launchpad');
   workspaceBtn.firstChild.textContent = workspaceLabel + ' ';
+  adminUnlockBtn.textContent = adminUnlocked ? 'Lock Admin' : 'Unlock Admin';
+  adminUnlockBtn.className = adminUnlocked ? 'btn btn-secondary' : 'btn btn-outline';
 
   if (workspace === 'quote') {
     actionsBtn.classList.remove('hidden');
@@ -7462,29 +7614,31 @@ function updateToolbarState() {
           'Export Quote' +
         '</button>' +
       '</div>' +
-      '<div class="toolbar-menu-group">' +
-        '<div class="toolbar-menu-group-title">Product Maintenance</div>' +
-        '<button class="toolbar-menu-item" onclick="downloadProductExtractCsv(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
-          'Product Extract CSV' +
-        '</button>' +
-        '<button class="toolbar-menu-item" onclick="openProductImportPicker(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
-          'Upload Product CSV' +
-        '</button>' +
-        '<button class="toolbar-menu-item" onclick="resetProductCatalogueToBaseline(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>' +
-          'Reset to baseline product catalogue' +
-        '</button>' +
-        '<button class="toolbar-menu-item" onclick="openPasteBaselineModal(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>' +
-          'Paste Baseline Product Data' +
-        '</button>' +
-        '<button class="toolbar-menu-item" onclick="clearWorkflowSessionContext(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M8 6v12"></path><path d="M16 6v12"></path><path d="M5 6l1 14h12l1-14"></path></svg>' +
-          'Clear workflow/session context' +
-        '</button>' +
-      '</div>';
+      (adminUnlocked
+        ? ('<div class="toolbar-menu-group">' +
+            '<div class="toolbar-menu-group-title">Product Maintenance</div>' +
+            '<button class="toolbar-menu-item" onclick="downloadProductExtractCsv(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
+              'Product Extract CSV' +
+            '</button>' +
+            '<button class="toolbar-menu-item" onclick="openProductImportPicker(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
+              'Upload Product CSV' +
+            '</button>' +
+            '<button class="toolbar-menu-item" onclick="resetProductCatalogueToBaseline(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>' +
+              'Reset to baseline product catalogue' +
+            '</button>' +
+            '<button class="toolbar-menu-item" onclick="openPasteBaselineModal(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>' +
+              'Paste Baseline Product Data' +
+            '</button>' +
+            '<button class="toolbar-menu-item" onclick="clearWorkflowSessionContext(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M8 6v12"></path><path d="M16 6v12"></path><path d="M5 6l1 14h12l1-14"></path></svg>' +
+              'Clear workflow/session context' +
+            '</button>' +
+          '</div>')
+        : '');
   } else if (workspace === 'price') {
     const sourceLabel = productCatalogueState.sourceLabel || 'Embedded baseline';
     const sourceDateSuffix = productCatalogueState.sourceDate ? ' (' + formatCatalogueDate(productCatalogueState.sourceDate) + ')' : '';
@@ -7498,32 +7652,34 @@ function updateToolbarState() {
           'Export Current View as PDF' +
         '</button>' +
       '</div>' +
-      '<div class="toolbar-menu-group">' +
-        '<div class="toolbar-menu-group-title">Product Maintenance</div>' +
-        '<button class="toolbar-menu-item" onclick="downloadProductExtractCsv(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
-          'Download Product CSV' +
-        '</button>' +
-        '<button class="toolbar-menu-item" onclick="openProductImportPicker(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
-          'Upload Product CSV' +
-        '</button>' +
-      '</div>' +
-      '<div class="toolbar-menu-group">' +
-        '<div class="toolbar-menu-group-title">Admin</div>' +
-        '<button class="toolbar-menu-item" onclick="resetProductCatalogueToBaseline(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>' +
-          'Reset Products to Baseline' +
-        '</button>' +
-        '<button class="toolbar-menu-item" onclick="openPasteBaselineModal(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>' +
-          'Paste Baseline Product Data' +
-        '</button>' +
-        '<button class="toolbar-menu-item" onclick="clearWorkflowSessionContext(); closeToolbarMenus();">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M8 6v12"></path><path d="M16 6v12"></path><path d="M5 6l1 14h12l1-14"></path></svg>' +
-          'Clear Session Context' +
-        '</button>' +
-      '</div>' +
+      (adminUnlocked
+        ? ('<div class="toolbar-menu-group">' +
+            '<div class="toolbar-menu-group-title">Product Maintenance</div>' +
+            '<button class="toolbar-menu-item" onclick="downloadProductExtractCsv(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
+              'Download Product CSV' +
+            '</button>' +
+            '<button class="toolbar-menu-item" onclick="openProductImportPicker(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
+              'Upload Product CSV' +
+            '</button>' +
+          '</div>' +
+          '<div class="toolbar-menu-group">' +
+            '<div class="toolbar-menu-group-title">Admin</div>' +
+            '<button class="toolbar-menu-item" onclick="resetProductCatalogueToBaseline(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>' +
+              'Reset Products to Baseline' +
+            '</button>' +
+            '<button class="toolbar-menu-item" onclick="openPasteBaselineModal(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>' +
+              'Paste Baseline Product Data' +
+            '</button>' +
+            '<button class="toolbar-menu-item" onclick="clearWorkflowSessionContext(); closeToolbarMenus();">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M8 6v12"></path><path d="M16 6v12"></path><path d="M5 6l1 14h12l1-14"></path></svg>' +
+              'Clear Session Context' +
+            '</button>' +
+          '</div>')
+        : '') +
       '<div class="toolbar-menu-group">' +
         '<div class="toolbar-menu-group-title">Catalogue</div>' +
         '<div class="toolbar-menu-item is-static" aria-label="Catalogue source">' +
