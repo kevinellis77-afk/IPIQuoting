@@ -1052,6 +1052,45 @@
     justify-content: flex-end;
     gap: 8px;
   }
+  .audit-log-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .audit-log-table-wrap {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: auto;
+    max-height: 55vh;
+  }
+  .audit-log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 720px;
+  }
+  .audit-log-table th,
+  .audit-log-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--off-white);
+    text-align: left;
+    vertical-align: top;
+  }
+  .audit-log-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f8fbfd;
+    color: var(--charcoal-dark);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .audit-log-empty {
+    padding: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
 
   /* Preview / Export */
   .preview-section {
@@ -2949,6 +2988,27 @@
   </div>
 </div>
 
+<!-- Audit Log Modal -->
+<div class="modal-overlay hidden" id="auditLogModal" onclick="closeAuditLogModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:980px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Audit Log</div>
+        <div class="modal-subtitle">Local browser trail for admin, catalogue, and workflow actions.</div>
+      </div>
+      <button class="modal-close" onclick="closeAuditLogModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="audit-log-meta" id="auditLogMeta"></div>
+      <div class="audit-log-table-wrap" id="auditLogTableWrap"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="downloadAuditLogCsv()">Download CSV</button>
+      <button class="btn btn-primary" onclick="closeAuditLogModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── PRODUCT DATA ───────────────────────────────────────────────────────────
 const PRODUCTS = [
@@ -3242,6 +3302,8 @@ const PRODUCT_CSV_HEADERS = [
 const PRODUCT_CSV_REQUIRED_HEADERS = ['product_id', 'product_e', 'category', 'charge_type', 'list_rrp', 'cost', 'threshold'];
 const PRODUCT_CATALOGUE_STORAGE_KEY = 'ipi-partner-quote-products-v1';
 const PRODUCT_CATALOGUE_META_STORAGE_KEY = 'ipi-partner-quote-products-meta-v1';
+const AUDIT_LOG_STORAGE_KEY = 'ipi-partner-quote-audit-log-v1';
+const AUDIT_LOG_MAX_ENTRIES = 500;
 const ADMIN_UNLOCK_TTL_MS = 30 * 60 * 1000;
 const ADMIN_UNLOCK_STORAGE_KEY = 'ipi-admin-unlock-expiry-v1';
 const ADMIN_PASSWORD_HASH = 'cf89bbaebb92151d2728f49f2038d8676f14e8ecf9ec529a0587b03cf94251d4';
@@ -3252,6 +3314,117 @@ const productCatalogueState = {
   sourceLabel: 'Embedded baseline',
   sourceDate: null
 };
+
+function getAuditLogEvents() {
+  try {
+    const raw = localStorage.getItem(AUDIT_LOG_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function persistAuditLogEvents(events) {
+  try {
+    localStorage.setItem(AUDIT_LOG_STORAGE_KEY, JSON.stringify(events));
+  } catch (_) {}
+}
+
+function appendAuditEvent(event) {
+  const payload = Object.assign({}, event || {});
+  payload.timestamp = new Date().toISOString();
+  payload.sourceLabel = payload.sourceLabel || productCatalogueState.sourceLabel || 'Embedded baseline';
+  payload.sourceDate = payload.sourceDate || productCatalogueState.sourceDate || null;
+  const events = getAuditLogEvents();
+  events.push(payload);
+  while (events.length > AUDIT_LOG_MAX_ENTRIES) events.shift();
+  persistAuditLogEvents(events);
+  return payload;
+}
+
+function formatAuditTimestamp(value) {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+}
+
+function renderAuditLogModalBody() {
+  const events = getAuditLogEvents();
+  const metaEl = document.getElementById('auditLogMeta');
+  const tableWrap = document.getElementById('auditLogTableWrap');
+  if (!metaEl || !tableWrap) return;
+  metaEl.textContent = events.length + ' event' + (events.length === 1 ? '' : 's') + ' stored locally (max ' + AUDIT_LOG_MAX_ENTRIES + ').';
+  if (!events.length) {
+    tableWrap.innerHTML = '<div class="audit-log-empty">No audit events captured yet.</div>';
+    return;
+  }
+  const rows = events.slice().reverse().map(function(evt) {
+    const metadata = Object.assign({}, evt);
+    delete metadata.timestamp;
+    delete metadata.eventType;
+    delete metadata.status;
+    const details = Object.keys(metadata).sort().map(function(key) {
+      const value = metadata[key];
+      if (value == null || value === '') return '';
+      return '<div><b>' + escapeHtml(key) + ':</b> ' + escapeHtml(String(value)) + '</div>';
+    }).filter(Boolean).join('');
+    return '<tr>' +
+      '<td>' + escapeHtml(formatAuditTimestamp(evt.timestamp)) + '</td>' +
+      '<td>' + escapeHtml(evt.eventType || '') + '</td>' +
+      '<td>' + escapeHtml(evt.status || '') + '</td>' +
+      '<td>' + (details || '—') + '</td>' +
+    '</tr>';
+  }).join('');
+  tableWrap.innerHTML = '' +
+    '<table class="audit-log-table">' +
+      '<thead><tr><th>Timestamp</th><th>Event</th><th>Status</th><th>Metadata</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+}
+
+function openAuditLogModal() {
+  renderAuditLogModalBody();
+  const modal = document.getElementById('auditLogModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeAuditLogModal(e) {
+  const modal = document.getElementById('auditLogModal');
+  if (!modal) return;
+  if (!e || e.target === modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+function downloadAuditLogCsv() {
+  const events = getAuditLogEvents();
+  const headers = ['timestamp', 'event_type', 'status', 'source_label', 'source_date', 'row_count', 'details_json'];
+  const lines = [headers.map(csvEscape).join(',')];
+  events.forEach(function(evt) {
+    const details = Object.assign({}, evt);
+    delete details.timestamp;
+    delete details.eventType;
+    delete details.status;
+    delete details.sourceLabel;
+    delete details.sourceDate;
+    delete details.rowCount;
+    const row = [
+      evt.timestamp || '',
+      evt.eventType || '',
+      evt.status || '',
+      evt.sourceLabel || '',
+      evt.sourceDate || '',
+      evt.rowCount == null ? '' : evt.rowCount,
+      JSON.stringify(details)
+    ];
+    lines.push(row.map(csvEscape).join(','));
+  });
+  const stamp = new Date().toISOString().slice(0, 10);
+  downloadBlob('audit-log-' + stamp + '.csv', lines.join('\n'), 'text/csv;charset=utf-8;');
+  showToast('✓ Audit log CSV downloaded');
+}
 
 function isAdminUnlocked() {
   try {
@@ -3289,10 +3462,22 @@ async function unlockAdmin(passwordInput) {
     matched = false;
   }
   if (!matched && candidate === ADMIN_PASSWORD_PLAINTEXT_FALLBACK) matched = true;
-  if (!matched) return false;
+  if (!matched) {
+    appendAuditEvent({
+      eventType: 'admin_unlock',
+      status: 'failure',
+      reason: 'invalid_password'
+    });
+    return false;
+  }
   try {
     sessionStorage.setItem(ADMIN_UNLOCK_STORAGE_KEY, String(Date.now() + ADMIN_UNLOCK_TTL_MS));
   } catch (_) {}
+  appendAuditEvent({
+    eventType: 'admin_unlock',
+    status: 'success',
+    ttlMinutes: Math.round(ADMIN_UNLOCK_TTL_MS / 60000)
+  });
   updateToolbarState();
   return true;
 }
@@ -3301,6 +3486,10 @@ function lockAdmin() {
   try {
     sessionStorage.removeItem(ADMIN_UNLOCK_STORAGE_KEY);
   } catch (_) {}
+  appendAuditEvent({
+    eventType: 'admin_lock',
+    status: 'success'
+  });
   updateToolbarState();
 }
 
@@ -3823,6 +4012,13 @@ function resetProductCatalogueToBaseline() {
   quoteItems = [];
   clearUploadedCatalogueStorage();
   setProductCatalogueSource({ sourceType: 'embedded', sourceLabel: 'Embedded baseline', sourceDate: null }, { clearPersisted: true });
+  appendAuditEvent({
+    eventType: 'baseline_reset',
+    status: 'success',
+    sourceLabel: 'Embedded baseline',
+    sourceDate: null,
+    rowCount: PRODUCTS.length
+  });
   refreshProductCatalogueViews();
   showToast('✓ Product catalogue reset (' + PRODUCTS.length + ' rows) — source: Embedded baseline');
 }
@@ -3849,15 +4045,35 @@ function handleProductImportFile(event) {
       quoteItems = [];
       persistProductCatalogue();
       setProductCatalogueSource({ sourceType: 'uploaded', sourceLabel: 'Uploaded CSV', sourceDate: new Date().toISOString() }, { persist: true });
+      appendAuditEvent({
+        eventType: 'product_csv_upload',
+        status: 'success',
+        sourceLabel: 'Uploaded CSV',
+        sourceDate: productCatalogueState.sourceDate,
+        rowCount: imported.length,
+        fileName: file.name || ''
+      });
       refreshProductCatalogueViews();
       showToast('✓ Product CSV uploaded (' + imported.length + ' rows) — source: Uploaded CSV');
     } catch (err) {
+      appendAuditEvent({
+        eventType: 'product_csv_upload',
+        status: 'failure',
+        fileName: file.name || '',
+        reason: err && err.message ? err.message : String(err)
+      });
       alert('Unable to import product CSV: ' + (err && err.message ? err.message : err));
     } finally {
       if (input) input.value = '';
     }
   };
   reader.onerror = function() {
+    appendAuditEvent({
+      eventType: 'product_csv_upload',
+      status: 'failure',
+      fileName: file.name || '',
+      reason: 'file_read_error'
+    });
     alert('Unable to read selected CSV file.');
     if (input) input.value = '';
   };
@@ -4330,6 +4546,10 @@ function clearWorkflowSessionContext() {
   renderPartnerPriceList();
   renderQuote();
   updateWorkflowContextBar();
+  appendAuditEvent({
+    eventType: 'clear_session_context',
+    status: 'success'
+  });
   showToast('✓ Workflow/session context cleared (profile, workspace and filters reset)');
 }
 
@@ -6389,9 +6609,21 @@ function applyPastedBaselineProductData() {
   const rawText = textArea ? textArea.value : '';
   clearPasteBaselineValidationError();
   try {
-    replaceEmbeddedBaselineFromPastedData(rawText);
+    const count = replaceEmbeddedBaselineFromPastedData(rawText);
+    appendAuditEvent({
+      eventType: 'pasted_baseline_apply',
+      status: 'success',
+      sourceLabel: productCatalogueState.sourceLabel,
+      sourceDate: productCatalogueState.sourceDate,
+      rowCount: count
+    });
     closePasteBaselineModal();
   } catch (err) {
+    appendAuditEvent({
+      eventType: 'pasted_baseline_apply',
+      status: 'failure',
+      reason: err && err.message ? err.message : String(err)
+    });
     showPasteBaselineValidationError(err && err.message ? err.message : String(err));
     showToast('⚠ Baseline replacement failed');
   }
@@ -7541,6 +7773,11 @@ document.addEventListener('click', function(e) {
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    const auditLogModal = document.getElementById('auditLogModal');
+    if (auditLogModal && !auditLogModal.classList.contains('hidden')) {
+      closeAuditLogModal();
+      return;
+    }
     const adminUnlockModal = document.getElementById('adminUnlockModal');
     if (adminUnlockModal && !adminUnlockModal.classList.contains('hidden')) {
       closeAdminUnlockModal();
@@ -7638,7 +7875,18 @@ function updateToolbarState() {
               'Clear workflow/session context' +
             '</button>' +
           '</div>')
-        : '');
+        : '') +
+      '<div class="toolbar-menu-group">' +
+        '<div class="toolbar-menu-group-title">Audit</div>' +
+        '<button class="toolbar-menu-item" onclick="openAuditLogModal(); closeToolbarMenus();">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11h6"></path><path d="M9 15h6"></path><path d="M9 7h6"></path><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path></svg>' +
+          'View Audit Log' +
+        '</button>' +
+        '<button class="toolbar-menu-item" onclick="downloadAuditLogCsv(); closeToolbarMenus();">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
+          'Download Audit Log CSV' +
+        '</button>' +
+      '</div>';
   } else if (workspace === 'price') {
     const sourceLabel = productCatalogueState.sourceLabel || 'Embedded baseline';
     const sourceDateSuffix = productCatalogueState.sourceDate ? ' (' + formatCatalogueDate(productCatalogueState.sourceDate) + ')' : '';
@@ -7680,6 +7928,17 @@ function updateToolbarState() {
             '</button>' +
           '</div>')
         : '') +
+      '<div class="toolbar-menu-group">' +
+        '<div class="toolbar-menu-group-title">Audit</div>' +
+        '<button class="toolbar-menu-item" onclick="openAuditLogModal(); closeToolbarMenus();">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11h6"></path><path d="M9 15h6"></path><path d="M9 7h6"></path><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path></svg>' +
+          'View Audit Log' +
+        '</button>' +
+        '<button class="toolbar-menu-item" onclick="downloadAuditLogCsv(); closeToolbarMenus();">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
+          'Download Audit Log CSV' +
+        '</button>' +
+      '</div>' +
       '<div class="toolbar-menu-group">' +
         '<div class="toolbar-menu-group-title">Catalogue</div>' +
         '<div class="toolbar-menu-item is-static" aria-label="Catalogue source">' +
