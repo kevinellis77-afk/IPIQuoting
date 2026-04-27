@@ -5701,6 +5701,26 @@ function openSavedQuotesModal(options) {
   }
   const uiState = (options && options.uiState) || captureSavedQuotesUiState();
   const saved = getSavedQuotes();
+  const latestByBase = saved.reduce((acc, q) => {
+    const baseRef = getQuoteBaseRef(q);
+    const existing = acc[baseRef];
+    if (!existing) {
+      acc[baseRef] = q;
+      return acc;
+    }
+    const existingVersion = getQuoteVersion(existing);
+    const nextVersion = getQuoteVersion(q);
+    if (nextVersion > existingVersion) {
+      acc[baseRef] = q;
+      return acc;
+    }
+    if (nextVersion === existingVersion) {
+      const existingSavedAt = new Date(existing.savedAt || 0).getTime();
+      const nextSavedAt = new Date(q.savedAt || 0).getTime();
+      if (nextSavedAt > existingSavedAt) acc[baseRef] = q;
+    }
+    return acc;
+  }, {});
   
   const subtitle = document.getElementById('savedQuotesSubtitle');
   subtitle.textContent = saved.length === 0 ? 'No saved quotes yet' : saved.length + ' saved quote' + (saved.length !== 1 ? 's' : '');
@@ -5709,7 +5729,7 @@ function openSavedQuotesModal(options) {
   let pipelineHTML = '';
   if (saved.length > 0) {
     const stats = { draft:{count:0,acv:0}, sent:{count:0,acv:0}, won:{count:0,acv:0}, lost:{count:0,acv:0} };
-    saved.forEach(q => {
+    Object.values(latestByBase).forEach(q => {
       const s = q.status || 'draft';
       if (stats[s]) { stats[s].count++; stats[s].acv += q.acv || 0; }
     });
