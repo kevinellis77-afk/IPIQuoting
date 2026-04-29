@@ -2145,7 +2145,8 @@
 
   /* ─── LAUNCHPAD / PRICE LIST ─── */
   .launchpad-overlay,
-  .price-list-overlay {
+  .price-list-overlay,
+  .license-features-overlay {
     position: fixed;
     inset: 108px 0 0 0;
     z-index: 150;
@@ -2157,10 +2158,12 @@
   }
 
   .launchpad-overlay.hidden,
-  .price-list-overlay.hidden { display: none; }
+  .price-list-overlay.hidden,
+  .license-features-overlay.hidden { display: none; }
 
   .launchpad-shell,
-  .price-list-shell {
+  .price-list-shell,
+  .license-features-shell {
     max-width: 1280px;
     margin: 0 auto;
     padding: 28px 30px 36px;
@@ -2610,6 +2613,10 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M3 12h18"></path><path d="M3 18h18"></path></svg>
             Partner Price List
           </button>
+          <button class="toolbar-menu-item" onclick="selectWorkspace('licenseFeatures')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 9.74-8 10-4.5-.26-8-5-8-10V6l8-4z"></path><path d="M9 12l2 2 4-4"></path></svg>
+            License Options &amp; Features
+          </button>
         </div>
       </div>
     </div>
@@ -2660,8 +2667,29 @@
         <div class="launchpad-card-copy">Open a dedicated commercial view showing List RRP and the selected partner net price</div>
         <button class="btn btn-outline" onclick="openPriceList()">Open Price List</button>
       </div>
+      <div class="launchpad-card price">
+        <div class="launchpad-card-icon">🔐</div>
+        <div class="launchpad-card-title">License Options &amp; Features</div>
+        <div class="launchpad-card-copy">Review available licensing options, feature packs and commercial guidance for partner-ready proposals.</div>
+        <button class="btn btn-outline" onclick="selectWorkspace('licenseFeatures')">Open License Options</button>
+      </div>
     </div>
 
+  </div>
+</div>
+
+<div class="license-features-overlay hidden" id="licenseFeaturesOverlay">
+  <div class="license-features-shell">
+    <div class="price-list-header">
+      <div class="price-list-title">License Options &amp; Features</div>
+      <div class="price-list-header-actions">
+        <div class="price-list-profile">Uses current partner profile context for pricing posture and feature guidance.</div>
+      </div>
+    </div>
+    <div class="empty-state" style="min-height: 340px;">
+      <h3>License options module</h3>
+      <p>This workspace is now active and ready for license feature content.</p>
+    </div>
   </div>
 </div>
 
@@ -4584,7 +4612,7 @@ function clearWorkflowSessionContext() {
 }
 
 function updateWorkflowContextBar() {
-  const workspaceMap = { launchpad: 'Launchpad', quote: 'Quoting Tool', price: 'Partner Price List' };
+  const workspaceMap = { launchpad: 'Launchpad', quote: 'Quoting Tool', price: 'Partner Price List', licenseFeatures: 'License Options & Features' };
   const workspaceLabel = workspaceMap[getCurrentWorkspace()] || 'Launchpad';
   const profile = getSelectedQuoteProfile();
   const ref = (document.getElementById('quoteRef')?.value || '').trim() || 'Draft (not set)';
@@ -7750,6 +7778,7 @@ function initPartnerPriceList() {
 function openLaunchpad() {
   document.getElementById('launchpadOverlay').classList.remove('hidden');
   document.getElementById('priceListOverlay').classList.add('hidden');
+  document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
   updateToolbarState();
   updateWorkflowContextBar();
 }
@@ -7757,6 +7786,7 @@ function openLaunchpad() {
 function openQuoteBuilder() {
   document.getElementById('launchpadOverlay').classList.add('hidden');
   document.getElementById('priceListOverlay').classList.add('hidden');
+  document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
   updateToolbarState();
   updateWorkflowContextBar();
 }
@@ -7764,8 +7794,17 @@ function openQuoteBuilder() {
 function openPriceList() {
   document.getElementById('launchpadOverlay').classList.add('hidden');
   document.getElementById('priceListOverlay').classList.remove('hidden');
+  document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
   syncPriceListFilterOptions();
   renderPartnerPriceList();
+  updateToolbarState();
+  updateWorkflowContextBar();
+}
+
+function openLicenseFeatures() {
+  document.getElementById('launchpadOverlay').classList.add('hidden');
+  document.getElementById('priceListOverlay').classList.add('hidden');
+  document.getElementById('licenseFeaturesOverlay').classList.remove('hidden');
   updateToolbarState();
   updateWorkflowContextBar();
 }
@@ -7773,8 +7812,10 @@ function openPriceList() {
 function getCurrentWorkspace() {
   const launchpadVisible = !document.getElementById('launchpadOverlay').classList.contains('hidden');
   const priceListVisible = !document.getElementById('priceListOverlay').classList.contains('hidden');
+  const licenseFeaturesVisible = !document.getElementById('licenseFeaturesOverlay').classList.contains('hidden');
   if (launchpadVisible) return 'launchpad';
   if (priceListVisible) return 'price';
+  if (licenseFeaturesVisible) return 'licenseFeatures';
   return 'quote';
 }
 
@@ -7832,6 +7873,7 @@ function selectWorkspace(view, options) {
 
   if (view === 'launchpad') openLaunchpad();
   else if (view === 'price') openPriceList();
+  else if (view === 'licenseFeatures') openLicenseFeatures();
   else openQuoteBuilder();
 
   if (view === 'quote') applyQuoteFilterState(workflowSessionState.quoteFilters || getStoredJson(WORKFLOW_CONTEXT_KEYS.quoteFilters, null));
@@ -7854,7 +7896,11 @@ function updateToolbarState() {
   if (!workspaceBtn || !actionsBtn || !actionsMenu || !adminUnlockBtn) return;
   const adminUnlocked = isAdminUnlocked();
 
-  const workspaceLabel = workspace === 'quote' ? 'Quoting Tool' : (workspace === 'price' ? 'Partner Price List' : 'Launchpad');
+  const workspaceLabel = workspace === 'quote'
+    ? 'Quoting Tool'
+    : (workspace === 'price'
+      ? 'Partner Price List'
+      : (workspace === 'licenseFeatures' ? 'License Options & Features' : 'Launchpad'));
   workspaceBtn.firstChild.textContent = workspaceLabel + ' ';
   adminUnlockBtn.textContent = adminUnlocked ? 'Lock Admin' : 'Unlock Admin';
   adminUnlockBtn.className = adminUnlocked ? 'btn btn-secondary' : 'btn btn-outline';
