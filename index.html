@@ -3128,6 +3128,84 @@ const PRODUCTS = [
   {id:"S100935",name:"Consult - Custom Consultancy Services",cat:"Consultancy",billing:"One Off",list:156.25,cost:0,threshold:109.38,license_type:"N/A",payment_type:"Per Hour",description:"IPI custom consultancy services, charged at a daily rate. Engages senior IPI consultants for strategic contact centre advice, technology roadmap development, solution architecture, vendor assessment, or bespoke integration design. Scope agreed in advance with a statement of work."},
 ];
 
+const LICENSE_FEATURE_SETS = {
+  ecx_ccaas_core: {
+    domain: 'ECX CCaaS',
+    columns: ['voice', 'omni', 'max'],
+    rows: [
+      { capability: 'inbound_voice', status: { voice: 'included', omni: 'included', max: 'included' } },
+      { capability: 'digital_channels', status: { voice: 'optional', omni: 'included', max: 'included' } },
+      { capability: 'outbound_dialler', status: { voice: 'optional', omni: 'optional', max: 'included' } },
+      { capability: 'workforce_management', status: { voice: 'optional', omni: 'optional', max: 'included' } },
+      { capability: 'advanced_analytics', status: { voice: 'optional', omni: 'conditional', max: 'included' }, marker: '*' }
+    ],
+    legend: [
+      { key: 'included', label: 'Included' },
+      { key: 'optional', label: 'Optional add-on' },
+      { key: 'conditional', label: 'Included with conditions' }
+    ],
+    footnotes: {
+      '*': 'Advanced analytics may depend on enabled AI modules or implementation scope.'
+    }
+  },
+  ecx_ucx: {
+    domain: 'ECX UCX',
+    columns: ['ucx'],
+    rows: [
+      { capability: 'enterprise_telephony', status: { ucx: 'included' } },
+      { capability: 'presence_and_messaging', status: { ucx: 'included' } },
+      { capability: 'softphone_mobile_clients', status: { ucx: 'included' } },
+      { capability: 'ccaas_transfer_and_escalation', status: { ucx: 'conditional' }, marker: '*' }
+    ],
+    legend: [
+      { key: 'included', label: 'Included' },
+      { key: 'optional', label: 'Optional add-on' },
+      { key: 'conditional', label: 'Included with conditions' }
+    ],
+    footnotes: {
+      '*': 'Cross-platform escalation depends on configured interop and licensing alignment.'
+    }
+  },
+  teams_integration: {
+    domain: 'ECX CCaaS',
+    columns: ['standard', 'advanced'],
+    rows: [
+      { capability: 'teams_presence_and_directory', status: { standard: 'included', advanced: 'included' } },
+      { capability: 'teams_call_transfer', status: { standard: 'included', advanced: 'included' } },
+      { capability: 'enhanced_sync_and_controls', status: { standard: 'optional', advanced: 'included' } },
+      { capability: 'compliance_workflow_hooks', status: { standard: 'conditional', advanced: 'included' }, marker: '*' }
+    ],
+    legend: [
+      { key: 'included', label: 'Included' },
+      { key: 'optional', label: 'Optional add-on' },
+      { key: 'conditional', label: 'Included with conditions' }
+    ],
+    footnotes: {
+      '*': 'Compliance workflow hooks may require approved connector and tenancy prerequisites.'
+    }
+  },
+  pci_cloud: {
+    domain: 'PCI Cloud',
+    columns: ['pauseable', 'standard', 'premium', 'digital'],
+    rows: [
+      { capability: 'secure_dtmf_suppression', status: { pauseable: 'included', standard: 'included', premium: 'included', digital: 'included' } },
+      { capability: 'agent_pay', status: { pauseable: 'optional', standard: 'included', premium: 'included', digital: 'optional' } },
+      { capability: 'pay_by_link', status: { pauseable: 'optional', standard: 'optional', premium: 'included', digital: 'included' } },
+      { capability: 'asr_payments', status: { pauseable: 'optional', standard: 'optional', premium: 'included', digital: 'conditional' }, marker: '*' },
+      { capability: 'monitored_sip', status: { pauseable: 'optional', standard: 'included', premium: 'included', digital: 'optional' } },
+      { capability: 'ivr_assist', status: { pauseable: 'optional', standard: 'optional', premium: 'included', digital: 'included' } }
+    ],
+    legend: [
+      { key: 'included', label: 'Included' },
+      { key: 'optional', label: 'Optional add-on' },
+      { key: 'conditional', label: 'Included with conditions' }
+    ],
+    footnotes: {
+      '*': 'ASR-based journeys depend on language pack support and verified deployment design.'
+    }
+  }
+};
+
 var NORMALIZED_PRODUCT_CACHE = {};
 
 // ─── PRODUCT ATTRIBUTE DERIVATION ────────────────────────────────────────────
