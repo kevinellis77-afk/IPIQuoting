@@ -2559,6 +2559,81 @@
   }
   .price-list-info-btn:hover { background: var(--charcoal); color: white; border-color: var(--charcoal); }
 
+  .license-features-module {
+    display: grid;
+    gap: 16px;
+  }
+  .license-features-section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+    padding: 18px;
+  }
+  .license-features-section-title {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: var(--charcoal-dark);
+  }
+  .license-features-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .license-features-table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+  }
+  .license-features-table th,
+  .license-features-table td {
+    border-bottom: 1px solid #e8eff3;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .license-features-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #36454F;
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .license-features-table .license-features-capability {
+    font-weight: 600;
+    text-align: left;
+    width: 35%;
+  }
+  .license-features-table .license-features-tier-cell {
+    text-align: center;
+    white-space: nowrap;
+  }
+  .license-features-token {
+    font-size: 14px;
+    line-height: 1;
+    display: inline-block;
+  }
+  .license-features-token.included { color: #23845b; }
+  .license-features-token.optional { color: #9aa7b1; }
+  .license-features-token.conditional { color: #8a5aa3; }
+  .license-features-legend,
+  .license-features-footnotes {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .license-features-legend ul,
+  .license-features-footnotes ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+  }
+
+  @media print {
+    .license-features-table-wrap { overflow: visible; }
+    .license-features-table { min-width: 0; }
+  }
+
 @media (max-width: 980px) {
     .launchpad-hero,
     .launchpad-cards,
@@ -2686,10 +2761,7 @@
         <div class="price-list-profile">Uses current partner profile context for pricing posture and feature guidance.</div>
       </div>
     </div>
-    <div class="empty-state" style="min-height: 340px;">
-      <h3>License options module</h3>
-      <p>This workspace is now active and ready for license feature content.</p>
-    </div>
+    <div id="licenseFeaturesModuleRoot"></div>
   </div>
 </div>
 
@@ -7883,8 +7955,80 @@ function openLicenseFeatures() {
   document.getElementById('launchpadOverlay').classList.add('hidden');
   document.getElementById('priceListOverlay').classList.add('hidden');
   document.getElementById('licenseFeaturesOverlay').classList.remove('hidden');
+  renderLicenseFeaturesWorkspace();
   updateToolbarState();
   updateWorkflowContextBar();
+}
+
+function formatLicenseFeatureLabel(value) {
+  return String(value || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, function(ch) { return ch.toUpperCase(); });
+}
+
+function renderFeatureLegend(section) {
+  if (!section || !Array.isArray(section.legend) || !section.legend.length) return '';
+  var items = section.legend.map(function(item) {
+    var token = item.key === 'included' ? '●' : (item.key === 'optional' ? '○' : '◐');
+    return '<li><span class="license-features-token ' + item.key + '">' + token + '</span> ' + escapeHtml(item.label) + '</li>';
+  }).join('');
+  return '<div class="license-features-legend"><strong>Legend</strong><ul>' + items + '</ul></div>';
+}
+
+function renderFootnotes(section) {
+  var footnotes = section && section.footnotes ? section.footnotes : null;
+  if (!footnotes) return '';
+  var keys = Object.keys(footnotes);
+  if (!keys.length) return '';
+  var items = keys.map(function(marker) {
+    return '<li><strong>' + escapeHtml(marker) + '</strong> ' + escapeHtml(footnotes[marker]) + '</li>';
+  }).join('');
+  return '<div class="license-features-footnotes"><strong>Notes</strong><ul>' + items + '</ul></div>';
+}
+
+function renderFeatureMatrixSection(section) {
+  if (!section) return '';
+  var cols = Array.isArray(section.columns) ? section.columns : [];
+  var rows = Array.isArray(section.rows) ? section.rows : [];
+  var header = '<tr><th scope="col" class="license-features-capability">Capability</th>' + cols.map(function(col) {
+    return '<th scope="col">' + escapeHtml(formatLicenseFeatureLabel(col)) + '</th>';
+  }).join('') + '</tr>';
+
+  var body = rows.map(function(row) {
+    var marker = row.marker ? '<sup>' + escapeHtml(row.marker) + '</sup>' : '';
+    var cells = cols.map(function(col) {
+      var status = row.status && row.status[col] ? row.status[col] : '';
+      var token = status === 'included' ? '●' : (status === 'optional' ? '○' : (status === 'conditional' ? '◐' : ''));
+      return '<td class="license-features-tier-cell" data-status="' + escapeHtml(status) + '">' + (token ? '<span class="license-features-token ' + status + '">' + token + '</span>' : '—') + '</td>';
+    }).join('');
+    return '<tr><th scope="row" class="license-features-capability">' + escapeHtml(formatLicenseFeatureLabel(row.capability)) + marker + '</th>' + cells + '</tr>';
+  }).join('');
+
+  return '' +
+    '<section class="license-features-section">' +
+      '<h3 class="license-features-section-title">' + escapeHtml(section.domain || 'License Feature Matrix') + '</h3>' +
+      '<div class="license-features-table-wrap">' +
+        '<table class="license-features-table">' +
+          '<thead>' + header + '</thead>' +
+          '<tbody>' + body + '</tbody>' +
+        '</table>' +
+      '</div>' +
+      renderFeatureLegend(section) +
+      renderFootnotes(section) +
+    '</section>';
+}
+
+function renderLicenseFeaturesWorkspace() {
+  var root = document.getElementById('licenseFeaturesModuleRoot');
+  if (!root) return;
+  root.innerHTML = '';
+  var keys = Object.keys(LICENSE_FEATURE_SETS || {});
+  if (!keys.length) {
+    root.innerHTML = '<div class="empty-state" style="min-height: 260px;"><h3>No license feature data</h3><p>Add entries to LICENSE_FEATURE_SETS to populate this workspace.</p></div>';
+    return;
+  }
+  root.className = 'license-features-module';
+  root.innerHTML = keys.map(function(key) { return renderFeatureMatrixSection(LICENSE_FEATURE_SETS[key]); }).join('');
 }
 
 function getCurrentWorkspace() {
