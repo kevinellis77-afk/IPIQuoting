@@ -2615,8 +2615,9 @@
     display: inline-block;
   }
   .license-features-token.included { color: #23845b; }
-  .license-features-token.optional { color: #9aa7b1; }
-  .license-features-token.conditional { color: #8a5aa3; }
+  .license-features-token.optional_addon { color: #9aa7b1; }
+  .license-features-token.requires_integration { color: #8a5aa3; }
+  .license-features-token.limited_presence { color: #a3742f; }
   .license-features-legend,
   .license-features-footnotes {
     margin-top: 10px;
@@ -3200,21 +3201,42 @@ const PRODUCTS = [
   {id:"S100935",name:"Consult - Custom Consultancy Services",cat:"Consultancy",billing:"One Off",list:156.25,cost:0,threshold:109.38,license_type:"N/A",payment_type:"Per Hour",description:"IPI custom consultancy services, charged at a daily rate. Engages senior IPI consultants for strategic contact centre advice, technology roadmap development, solution architecture, vendor assessment, or bespoke integration design. Scope agreed in advance with a statement of work."},
 ];
 
+const LICENSE_FEATURE_VOCABULARY = {
+  status: ['included', 'optional_addon', 'requires_integration', 'limited_presence'],
+  statusLabels: {
+    included: 'Included',
+    optional_addon: 'Optional add-on',
+    requires_integration: 'Requires integration',
+    limited_presence: 'Limited presence'
+  },
+  statusTokens: {
+    included: '●',
+    optional_addon: '○',
+    requires_integration: '◐',
+    limited_presence: '△'
+  },
+  canonicalTierLabels: {
+    voice: 'ECX Voice',
+    omni: 'ECX Omni',
+    max: 'ECX Max',
+    ucx: 'ECX UCX',
+    pauseable: 'Pauseable',
+    standard: 'Cloud PCI Standard',
+    premium: 'Cloud PCI Premium',
+    digital: 'Cloud PCI Digital'
+  }
+};
+
 const LICENSE_FEATURE_SETS = {
   ecx_ccaas_core: {
     domain: 'ECX CCaaS',
     columns: ['voice', 'omni', 'max'],
     rows: [
       { capability: 'inbound_voice', status: { voice: 'included', omni: 'included', max: 'included' } },
-      { capability: 'digital_channels', status: { voice: 'optional', omni: 'included', max: 'included' } },
-      { capability: 'outbound_dialler', status: { voice: 'optional', omni: 'optional', max: 'included' } },
-      { capability: 'workforce_management', status: { voice: 'optional', omni: 'optional', max: 'included' } },
-      { capability: 'advanced_analytics', status: { voice: 'optional', omni: 'conditional', max: 'included' }, marker: '*' }
-    ],
-    legend: [
-      { key: 'included', label: 'Included' },
-      { key: 'optional', label: 'Optional add-on' },
-      { key: 'conditional', label: 'Included with conditions' }
+      { capability: 'digital_channels', status: { voice: 'optional_addon', omni: 'included', max: 'included' } },
+      { capability: 'outbound_dialler', status: { voice: 'optional_addon', omni: 'optional_addon', max: 'included' } },
+      { capability: 'workforce_management', status: { voice: 'optional_addon', omni: 'optional_addon', max: 'included' } },
+      { capability: 'advanced_analytics', status: { voice: 'optional_addon', omni: 'requires_integration', max: 'included' }, marker: '*' }
     ],
     footnotes: {
       '*': 'Advanced analytics may depend on enabled AI modules or implementation scope.'
@@ -3227,12 +3249,7 @@ const LICENSE_FEATURE_SETS = {
       { capability: 'enterprise_telephony', status: { ucx: 'included' } },
       { capability: 'presence_and_messaging', status: { ucx: 'included' } },
       { capability: 'softphone_mobile_clients', status: { ucx: 'included' } },
-      { capability: 'ccaas_transfer_and_escalation', status: { ucx: 'conditional' }, marker: '*' }
-    ],
-    legend: [
-      { key: 'included', label: 'Included' },
-      { key: 'optional', label: 'Optional add-on' },
-      { key: 'conditional', label: 'Included with conditions' }
+      { capability: 'ccaas_transfer_and_escalation', status: { ucx: 'requires_integration' }, marker: '*' }
     ],
     footnotes: {
       '*': 'Cross-platform escalation depends on configured interop and licensing alignment.'
@@ -3244,13 +3261,8 @@ const LICENSE_FEATURE_SETS = {
     rows: [
       { capability: 'teams_presence_and_directory', status: { standard: 'included', advanced: 'included' } },
       { capability: 'teams_call_transfer', status: { standard: 'included', advanced: 'included' } },
-      { capability: 'enhanced_sync_and_controls', status: { standard: 'optional', advanced: 'included' } },
-      { capability: 'compliance_workflow_hooks', status: { standard: 'conditional', advanced: 'included' }, marker: '*' }
-    ],
-    legend: [
-      { key: 'included', label: 'Included' },
-      { key: 'optional', label: 'Optional add-on' },
-      { key: 'conditional', label: 'Included with conditions' }
+      { capability: 'enhanced_sync_and_controls', status: { standard: 'optional_addon', advanced: 'included' } },
+      { capability: 'compliance_workflow_hooks', status: { standard: 'requires_integration', advanced: 'included' }, marker: '*' }
     ],
     footnotes: {
       '*': 'Compliance workflow hooks may require approved connector and tenancy prerequisites.'
@@ -3261,16 +3273,11 @@ const LICENSE_FEATURE_SETS = {
     columns: ['pauseable', 'standard', 'premium', 'digital'],
     rows: [
       { capability: 'secure_dtmf_suppression', status: { pauseable: 'included', standard: 'included', premium: 'included', digital: 'included' } },
-      { capability: 'agent_pay', status: { pauseable: 'optional', standard: 'included', premium: 'included', digital: 'optional' } },
-      { capability: 'pay_by_link', status: { pauseable: 'optional', standard: 'optional', premium: 'included', digital: 'included' } },
-      { capability: 'asr_payments', status: { pauseable: 'optional', standard: 'optional', premium: 'included', digital: 'conditional' }, marker: '*' },
-      { capability: 'monitored_sip', status: { pauseable: 'optional', standard: 'included', premium: 'included', digital: 'optional' } },
-      { capability: 'ivr_assist', status: { pauseable: 'optional', standard: 'optional', premium: 'included', digital: 'included' } }
-    ],
-    legend: [
-      { key: 'included', label: 'Included' },
-      { key: 'optional', label: 'Optional add-on' },
-      { key: 'conditional', label: 'Included with conditions' }
+      { capability: 'agent_pay', status: { pauseable: 'optional_addon', standard: 'included', premium: 'included', digital: 'optional_addon' } },
+      { capability: 'pay_by_link', status: { pauseable: 'optional_addon', standard: 'optional_addon', premium: 'included', digital: 'included' } },
+      { capability: 'asr_payments', status: { pauseable: 'optional_addon', standard: 'optional_addon', premium: 'included', digital: 'limited_presence' }, marker: '*' },
+      { capability: 'monitored_sip', status: { pauseable: 'optional_addon', standard: 'included', premium: 'included', digital: 'optional_addon' } },
+      { capability: 'ivr_assist', status: { pauseable: 'optional_addon', standard: 'optional_addon', premium: 'included', digital: 'included' } }
     ],
     footnotes: {
       '*': 'ASR-based journeys depend on language pack support and verified deployment design.'
@@ -3279,6 +3286,36 @@ const LICENSE_FEATURE_SETS = {
 };
 
 var NORMALIZED_PRODUCT_CACHE = {};
+
+function validateLicenseFeatureSet(data) {
+  var allowedStatuses = new Set(LICENSE_FEATURE_VOCABULARY.status);
+  var issues = [];
+  Object.keys(data || {}).forEach(function(sectionKey) {
+    var section = data[sectionKey];
+    var seenCapabilities = new Set();
+    var rows = Array.isArray(section && section.rows) ? section.rows : [];
+    var footnotes = section && section.footnotes ? section.footnotes : {};
+    rows.forEach(function(row) {
+      if (seenCapabilities.has(row.capability)) {
+        issues.push('[' + sectionKey + '] duplicate capability label: ' + row.capability);
+      } else {
+        seenCapabilities.add(row.capability);
+      }
+      Object.keys((row && row.status) || {}).forEach(function(col) {
+        var status = row.status[col];
+        if (!allowedStatuses.has(status)) {
+          issues.push('[' + sectionKey + '] unknown status "' + status + '" on capability "' + row.capability + '" (' + col + ')');
+        }
+      });
+      if (row.marker && !footnotes[row.marker]) {
+        issues.push('[' + sectionKey + '] missing footnote for marker "' + row.marker + '"');
+      }
+    });
+  });
+  if (issues.length) {
+    throw new Error('License feature set validation failed:\n- ' + issues.join('\n- '));
+  }
+}
 
 // ─── PRODUCT ATTRIBUTE DERIVATION ────────────────────────────────────────────
 function stripBracketedProductText(name) {
@@ -5130,6 +5167,13 @@ function applyUILabelDictionary() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  const isNonProductionLicenseValidation =
+    /localhost|127\.0\.0\.1/i.test(window.location.hostname || '') ||
+    window.location.protocol === 'file:' ||
+    /[?&]debug(=1|=true)?\b/i.test(window.location.search);
+  if (isNonProductionLicenseValidation) {
+    validateLicenseFeatureSet(LICENSE_FEATURE_SETS);
+  }
   applyUILabelDictionary();
   setupGlobalCommercialContextSync();
   const hasStoredCatalogue = loadStoredProductCatalogue();
@@ -7961,16 +8005,20 @@ function openLicenseFeatures() {
 }
 
 function formatLicenseFeatureLabel(value) {
+  if (Object.prototype.hasOwnProperty.call(LICENSE_FEATURE_VOCABULARY.canonicalTierLabels, value)) {
+    return LICENSE_FEATURE_VOCABULARY.canonicalTierLabels[value];
+  }
   return String(value || '')
     .replace(/_/g, ' ')
     .replace(/\b\w/g, function(ch) { return ch.toUpperCase(); });
 }
 
 function renderFeatureLegend(section) {
-  if (!section || !Array.isArray(section.legend) || !section.legend.length) return '';
-  var items = section.legend.map(function(item) {
-    var token = item.key === 'included' ? '●' : (item.key === 'optional' ? '○' : '◐');
-    return '<li><span class="license-features-token ' + item.key + '">' + token + '</span> ' + escapeHtml(item.label) + '</li>';
+  if (!section) return '';
+  var items = LICENSE_FEATURE_VOCABULARY.status.map(function(key) {
+    var token = LICENSE_FEATURE_VOCABULARY.statusTokens[key] || '';
+    var label = LICENSE_FEATURE_VOCABULARY.statusLabels[key] || formatLicenseFeatureLabel(key);
+    return '<li><span class="license-features-token ' + key + '">' + token + '</span> ' + escapeHtml(label) + '</li>';
   }).join('');
   return '<div class="license-features-legend"><strong>Legend</strong><ul>' + items + '</ul></div>';
 }
@@ -7998,7 +8046,7 @@ function renderFeatureMatrixSection(section) {
     var marker = row.marker ? '<sup>' + escapeHtml(row.marker) + '</sup>' : '';
     var cells = cols.map(function(col) {
       var status = row.status && row.status[col] ? row.status[col] : '';
-      var token = status === 'included' ? '●' : (status === 'optional' ? '○' : (status === 'conditional' ? '◐' : ''));
+      var token = LICENSE_FEATURE_VOCABULARY.statusTokens[status] || '';
       return '<td class="license-features-tier-cell" data-status="' + escapeHtml(status) + '">' + (token ? '<span class="license-features-token ' + status + '">' + token + '</span>' : '—') + '</td>';
     }).join('');
     return '<tr><th scope="row" class="license-features-capability">' + escapeHtml(formatLicenseFeatureLabel(row.capability)) + marker + '</th>' + cells + '</tr>';
