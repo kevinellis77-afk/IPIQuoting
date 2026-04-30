@@ -8125,11 +8125,33 @@ function renderEcxLicenseFeaturesView() {
 }
 
 function renderPciLicenseFeaturesView() {
-  var licenseCards = pciLicences.map(function(opt) {
-    return renderLicenseCard(opt.icon, opt.name, opt.badge + ' • ' + opt.description, opt.keyFeatures, false);
-  }).join('');
-  var modules = pciModules.map(function(module) {
-    return renderLicenseCard(module.icon, module.name, 'Capability module', module.capabilities, true);
+  // Intentionally curated PCI License View composition (fixed business order and filtered card set).
+  var pciLicenseViewOrder = {
+    'Cloud PCI (Core Platform)': 1,
+    'Standard': 2,
+    'Digital': 3,
+    'Premium': 4,
+    'IVR Assist': 5,
+    'Pauseable': 6
+  };
+  var curatedLicenseCards = pciLicences.filter(function(opt) {
+    return Object.prototype.hasOwnProperty.call(pciLicenseViewOrder, opt.name);
+  }).map(function(opt) {
+    return { kind: 'licence', data: opt, order: pciLicenseViewOrder[opt.name] };
+  });
+  var curatedModuleCards = pciModules.filter(function(module) {
+    return Object.prototype.hasOwnProperty.call(pciLicenseViewOrder, module.name);
+  }).map(function(module) {
+    return { kind: 'module', data: module, order: pciLicenseViewOrder[module.name] };
+  });
+  var pciLicenseViewCards = curatedLicenseCards.concat(curatedModuleCards).sort(function(a, b) {
+    return a.order - b.order;
+  });
+  var licenseCards = pciLicenseViewCards.map(function(card) {
+    if (card.kind === 'licence') {
+      return renderLicenseCard(card.data.icon, card.data.name, card.data.badge + ' • ' + card.data.description, card.data.keyFeatures, false);
+    }
+    return renderLicenseCard(card.data.icon, card.data.name, 'Capability module', card.data.capabilities, true);
   }).join('');
   var matrixRows = pciFeatureMatrix.map(function(row) {
     return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(row.feature) + '</th><td>' + renderStatusToken(row.pauseable) + '</td><td>' + renderStatusToken(row.standard) + '</td><td>' + renderStatusToken(row.premium) + '</td><td>' + renderStatusToken(row.digital) + '</td></tr>';
@@ -8138,7 +8160,7 @@ function renderPciLicenseFeaturesView() {
     return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(rule.item) + '</th><td>' + rule.rules.map(function(x) { return '<div>• ' + escapeHtml(x) + '</div>'; }).join('') + '</td></tr>';
   }).join('');
 
-  return '<section class="license-features-section"><h2 class="license-features-section-title">Cloud PCI Secure Payments</h2><p>Enable secure, PCI-compliant payments across voice and digital channels.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div class="license-cards-grid license-cards-grid--compact" id="licenseViewPanel">' + licenseCards + modules + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>Pauseable</th><th>Standard</th><th>Premium</th><th>Digital</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capacity / Commercial Rule</th><th>Details</th></tr></thead><tbody>' + capacityRows + '</tbody></table></div><div class="license-features-legend"><strong>Legend:</strong><ul><li class="license-features-legend-item">' + renderStatusToken('included') + ' Included</li><li class="license-features-legend-item">' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li class="license-features-legend-item">' + renderStatusToken('not_included') + ' Not Included</li><li class="license-features-legend-item">' + renderStatusToken('needs_confirmation') + ' Needs Confirmation</li></ul></div></div></section>';
+  return '<section class="license-features-section"><h2 class="license-features-section-title">Cloud PCI Secure Payments</h2><p>Enable secure, PCI-compliant payments across voice and digital channels.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div class="license-cards-grid license-cards-grid--compact" id="licenseViewPanel">' + licenseCards + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>Pauseable</th><th>Standard</th><th>Premium</th><th>Digital</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capacity / Commercial Rule</th><th>Details</th></tr></thead><tbody>' + capacityRows + '</tbody></table></div><div class="license-features-legend"><strong>Legend:</strong><ul><li class="license-features-legend-item">' + renderStatusToken('included') + ' Included</li><li class="license-features-legend-item">' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li class="license-features-legend-item">' + renderStatusToken('not_included') + ' Not Included</li><li class="license-features-legend-item">' + renderStatusToken('needs_confirmation') + ' Needs Confirmation</li></ul></div></div></section>';
 }
 
 function setLicenseFeaturesPage(tab) { activeLicenseFeaturePage = tab; renderLicenseFeaturesWorkspace(); }
