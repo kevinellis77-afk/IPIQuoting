@@ -3293,11 +3293,19 @@ const statusTypes = {
 };
 
 const licenceOptions = [
+  { id: 'ucx', name: 'ECX UCX', icon: '🧩', description: 'Back-office connectivity licence for users who do not require ECX Voice, Omni or Max agent licences.', features: ['Unified communications and collaboration','Auto attendant','Direct Inward Dial / DID','Dial-by-name','Conference bridge','Ring-all and hunt groups','Find Me / Follow Me','Desktop softphone','Browser softphone','PSTN access including 300 UK Local/National/Mobile minutes per committed licence'] },
   { id: 'voice', name: 'ECX Voice', icon: '📞', description: 'Feature-rich voice contact centre licence for inbound and outbound voice.', features: ['Inbound and outbound voice','Secure IVR','Scheduled callbacks','Post-call surveys','Voice campaigns','Preview and Progressive Dialling','Voice recording','PSTN access including 1,500 UK Local/National/Mobile outbound minutes per committed licence','30GB total data storage including recordings per committed licence','1 SIP channel per agent','Direct Dial Number / DDI per agent'] },
   { id: 'omni', name: 'ECX Omni', icon: '💬', description: 'Omnichannel contact centre licence for blended voice, digital and social engagement.', features: ['Includes all ECX Voice features','Blended voice, digital and social channels','Email','Chat','SMS','Social channels including Facebook and WhatsApp','ASR for simple IVR','In-queue callbacks','Text-to-speech for IVR','PSTN access including 1,500 UK Local/National/Mobile outbound minutes per committed licence','30GB total data storage including recordings per committed licence'] },
-  { id: 'max', name: 'ECX Max', icon: '✨', description: 'AI-powered contact centre licence including Voice, Omni and AI capability.', features: ['Includes all ECX Voice and ECX Omni features','Blended omnichannel inbound and outbound','AI Insights','AI Sidekick','AI Autopilot','AI-powered reporting and analytics','Agent support','Voice bots and chat bots','ASR for simple IVR','In-queue callbacks','Social integration','PSTN access including 1,500 UK Local/National/Mobile outbound minutes per committed licence','30GB total data storage including recordings per committed licence'] },
-  { id: 'ucx', name: 'ECX UCX', icon: '🧩', description: 'Back-office connectivity licence for users who do not require ECX Voice, Omni or Max agent licences.', features: ['Unified communications and collaboration','Auto attendant','Direct Inward Dial / DID','Dial-by-name','Conference bridge','Ring-all and hunt groups','Find Me / Follow Me','Desktop softphone','Browser softphone','PSTN access including 300 UK Local/National/Mobile minutes per committed licence'] }
+  { id: 'max', name: 'ECX Max', icon: '✨', description: 'AI-powered contact centre licence including Voice, Omni and AI capability.', features: ['Includes all ECX Voice and ECX Omni features','Blended omnichannel inbound and outbound','AI Insights','AI Sidekick','AI Autopilot','AI-powered reporting and analytics','Agent support','Voice bots and chat bots','ASR for simple IVR','In-queue callbacks','Social integration','PSTN access including 1,500 UK Local/National/Mobile outbound minutes per committed licence','30GB total data storage including recordings per committed licence'] }
 ];
+
+const ecxLicenseCardOrder = {
+  // Business-defined License View presentation order for ElasticCX cards.
+  'ECX UCX': 1,
+  'ECX Voice': 2,
+  'ECX Omni': 3,
+  'ECX Max': 4
+};
 
 const featureGroups = [
   { group: 'Core Channels', rows: [
@@ -8108,7 +8116,10 @@ function renderLicenseLayoutControls() {
 
 
 function renderEcxLicenseFeaturesView() {
-  var licenseCards = licenceOptions.map(function(opt) {
+  var orderedLicenceOptions = licenceOptions.slice().sort(function(a, b) {
+    return (ecxLicenseCardOrder[a.name] || Number.MAX_SAFE_INTEGER) - (ecxLicenseCardOrder[b.name] || Number.MAX_SAFE_INTEGER);
+  });
+  var licenseCards = orderedLicenceOptions.map(function(opt) {
     return renderLicenseCard(opt.icon, opt.name, opt.description, opt.features, false);
   }).join('');
 
