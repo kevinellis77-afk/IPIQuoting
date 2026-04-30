@@ -8031,6 +8031,40 @@ function renderStatusToken(statusKey) {
   return '<span class="license-features-token ' + escapeHtml(status.css) + '" role="img" aria-label="' + escapeHtml(status.label) + '" title="' + escapeHtml(status.label) + '">' + escapeHtml(status.icon) + '</span>';
 }
 
+
+function renderEcxLicenseFeaturesView() {
+  var normalizedSearch = licenseFeatureSearchValue.trim().toLowerCase();
+  var filteredLicences = licenceOptions.filter(function(opt) {
+    if (ecxSelectedLicense !== 'all' && opt.id !== ecxSelectedLicense) return false;
+    if (!normalizedSearch) return true;
+    var haystack = [opt.name, opt.description].concat(opt.features).join(' ').toLowerCase();
+    return haystack.indexOf(normalizedSearch) !== -1;
+  });
+  var licenseCards = filteredLicences.map(function(opt) {
+    return '<article class="license-card"><h4>' + opt.icon + ' ' + escapeHtml(opt.name) + '</h4><p>' + escapeHtml(opt.description) + '</p><ul>' + opt.features.map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></article>';
+  }).join('');
+  if (!licenseCards) {
+    licenseCards = '<div class="license-empty-state">No licence options match the current filters.</div>';
+  }
+
+  var matrixRows = featureGroups.map(function(section) {
+    var sectionRows = section.rows.map(function(row) {
+      return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(row[0]) + '</th><td>' + renderStatusToken(row[1]) + '</td><td>' + renderStatusToken(row[2]) + '</td><td>' + renderStatusToken(row[3]) + '</td></tr>';
+    }).join('');
+    return '<tr class="license-features-group-row"><th colspan="4">' + escapeHtml(section.group) + '</th></tr>' + sectionRows;
+  }).join('');
+
+  var ucxRows = ucxFeatures.map(function(feature) {
+    return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(feature) + '</th><td>' + renderStatusToken('included') + '</td></tr>';
+  }).join('');
+
+  var teamRows = teamsIntegrationFeatures.map(function(row) {
+    return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(row[0]) + '</th><td>' + renderStatusToken(row[1]) + '</td><td>' + renderStatusToken(row[2]) + '</td></tr>';
+  }).join('');
+
+  return '<section class="license-features-section"><h2 class="license-features-section-title">ElasticCX CCaaS Licence Options</h2><p>Review ECX licence tiers, included capabilities, and optional add-ons.</p><div class="license-controls"><input class="input" placeholder="Search licence features" value="' + escapeHtml(licenseFeatureSearchValue) + '" oninput="setLicenseFeatureSearch(this.value)"><select class="input" onchange="setEcxLicenseFilter(this.value)"><option value="all"' + (ecxSelectedLicense === 'all' ? ' selected' : '') + '>All licences</option>' + licenceOptions.map(function(opt){ return '<option value="' + escapeHtml(opt.id) + '"' + (ecxSelectedLicense === opt.id ? ' selected' : '') + '>' + escapeHtml(opt.name) + '</option>'; }).join('') + '</select><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div class="license-cards-grid" id="licenseViewPanel">' + licenseCards + '</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX Voice</th><th>ECX Omni</th><th>ECX Max</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div></div></section><section class="license-features-section"><h3 class="license-features-section-title">ECX UCX Back-office Feature Set</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX UCX</th></tr></thead><tbody>' + ucxRows + '</tbody></table></div></section><section class="license-features-section"><h3 class="license-features-section-title">MS Teams Integration</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Functionality</th><th>MS Teams Standard</th><th>MS Teams Advanced</th></tr></thead><tbody>' + teamRows + '</tbody></table></div></section>';
+}
+
 function renderPciLicenseFeaturesView() {
   var licenseCards = pciLicences.map(function(opt) {
     return '<article class="license-card"><h4>' + opt.icon + ' ' + escapeHtml(opt.name) + '</h4><p><strong>' + escapeHtml(opt.badge) + '</strong></p><p>' + escapeHtml(opt.description) + '</p><ul>' + opt.keyFeatures.map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></article>';
