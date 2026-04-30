@@ -3358,12 +3358,11 @@ const pciFeatureMatrix = [
   { feature: 'Pause/Resume Recording', pauseable: 'included', standard: 'not_included', premium: 'not_included', digital: 'not_included' },
   { feature: 'Agent Pay (DTMF)', pauseable: 'not_included', standard: 'included', premium: 'included', digital: 'not_included' },
   { feature: 'ASR Payments', pauseable: 'not_included', standard: 'included', premium: 'included', digital: 'not_included' },
-  { feature: 'Pay by Link', pauseable: 'add_on', standard: 'add_on', premium: 'included', digital: 'included' },
+  { feature: 'Pay by Link', pauseable: 'not_included', standard: 'not_included', premium: 'included', digital: 'included' },
   { feature: 'Voice Payments', pauseable: 'not_included', standard: 'included', premium: 'included', digital: 'not_included' },
-  { feature: 'Digital Payments', pauseable: 'capacity_dependent', standard: 'add_on', premium: 'included', digital: 'included' },
-  { feature: 'Omnichannel Support', pauseable: 'not_included', standard: 'needs_confirmation', premium: 'included', digital: 'included' },
-  { feature: 'SIP Channels Included', pauseable: 'capacity_dependent', standard: 'included', premium: 'included', digital: 'not_included' },
-  { feature: 'IVR Assist Compatibility', pauseable: 'needs_confirmation', standard: 'add_on', premium: 'add_on', digital: 'needs_confirmation' }
+  { feature: 'Digital Payments', pauseable: 'not_included', standard: 'add_on', premium: 'included', digital: 'included' },
+  { feature: 'Omnichannel Support', pauseable: 'not_included', standard: 'not_included', premium: 'included', digital: 'not_included' },
+  { feature: 'SIP Channels Included', pauseable: 'not_included', standard: 'included', premium: 'included', digital: 'not_included' },
 ];
 const pciCapacityRules = [
   { item: 'Pauseable', rules: ['1 licence per agent', 'Named or concurrent', 'Monthly or annual'] },
