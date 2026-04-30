@@ -2643,6 +2643,12 @@
     margin: 6px 0 0;
     padding-left: 18px;
   }
+  .license-page-tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .license-page-tab { border:1px solid var(--border); background:#fff; color:var(--charcoal); border-radius:999px; padding:7px 12px; cursor:pointer; font-weight:600; }
+  .license-page-tab.active { background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+  .license-hero-title { font-size: 24px; margin-bottom: 6px; }
+  .license-hero-subtitle { color: var(--text-muted); margin-bottom: 6px; }
+  .license-card-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 8px; }
 
   @media print {
     .license-features-table-wrap { overflow: visible; }
@@ -7989,6 +7995,9 @@ function formatLicenseFeatureLabel(value) {
   return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, function(ch) { return ch.toUpperCase(); });
 }
 
+var activeLicenseFeaturePage = 'ecx';
+var ecxSelectedLicense = 'all';
+
 function renderStatusToken(statusKey) {
   var pciStatus = {
     included: { label: 'Included', css: 'included' },
@@ -8002,9 +8011,7 @@ function renderStatusToken(statusKey) {
   return '<span class="license-features-token ' + escapeHtml(status.css) + '">' + escapeHtml(status.label) + '</span>';
 }
 
-function renderLicenseFeaturesWorkspace() {
-  var root = document.getElementById('licenseFeaturesModuleRoot');
-  if (!root) return;
+function renderPciLicenseFeaturesView() {
   var licenseCards = pciLicences.map(function(opt) {
     return '<article class="license-card"><h4>' + opt.icon + ' ' + escapeHtml(opt.name) + '</h4><p><strong>' + escapeHtml(opt.badge) + '</strong></p><p>' + escapeHtml(opt.description) + '</p><ul>' + opt.keyFeatures.map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></article>';
   }).join('');
@@ -8025,9 +8032,38 @@ function renderLicenseFeaturesWorkspace() {
     return '<tr><th scope="row">' + escapeHtml(rule.item) + '</th><td>' + rule.rules.map(function(x) { return '<div>• ' + escapeHtml(x) + '</div>'; }).join('') + '</td></tr>';
   }).join('');
 
-  root.className = 'license-features-module';
-  root.innerHTML = '<section class="license-features-section"><h2 class="license-features-section-title">Cloud PCI Secure Payments</h2><p>Enable secure, PCI-compliant payments across voice and digital channels.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div id="licenseViewPanel"><div class="license-cards-grid">' + licenseCards + '</div><h3 class="license-features-section-title" style="margin-top:16px;">Modules &amp; Capabilities</h3><div class="license-cards-grid">' + modules + '</div></div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table" id="mainFeatureMatrix"><thead><tr><th>Feature / Module</th><th>Pauseable</th><th>Standard</th><th>Premium</th><th>Digital</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div></div></section>' +
+  return '<section class="license-features-section"><h2 class="license-features-section-title">Cloud PCI Secure Payments</h2><p>Enable secure, PCI-compliant payments across voice and digital channels.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div id="licenseViewPanel"><div class="license-cards-grid">' + licenseCards + '</div><h3 class="license-features-section-title" style="margin-top:16px;">Modules &amp; Capabilities</h3><div class="license-cards-grid">' + modules + '</div></div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table" id="mainFeatureMatrix"><thead><tr><th>Feature / Module</th><th>Pauseable</th><th>Standard</th><th>Premium</th><th>Digital</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div></div></section>' +
     '<section class="license-features-section"><h3 class="license-features-section-title">Licensing &amp; Capacity</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Rule Area</th><th>Capacity / Licensing Rules</th></tr></thead><tbody>' + capacityRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Overage Logic:</strong> All PCI products allow overage and are billed monthly in arrears based on usage.</p></section>';
+}
+
+function renderEcxLicenseFeaturesView() {
+  var filteredCards = licenceOptions.filter(function(opt) { return ecxSelectedLicense === 'all' || opt.id === ecxSelectedLicense; });
+  var licenseCards = filteredCards.map(function(opt) {
+    return '<article class="license-card ' + (ecxSelectedLicense === opt.id ? 'active' : '') + '" onclick="setEcxLicenseFilter(\'' + escapeHtml(opt.id) + '\')"><h4>' + escapeHtml(opt.icon) + ' ' + escapeHtml(opt.name) + '</h4><p>' + escapeHtml(opt.description) + '</p><div class="license-card-meta">Committed licence model</div><ul>' + opt.features.map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></article>';
+  }).join('');
+  var matrixRows = featureGroups.map(function(group) {
+    var rows = group.rows.filter(function(row) { return !licenseFeatureSearchValue || row[0].toLowerCase().indexOf(licenseFeatureSearchValue.toLowerCase()) !== -1; }).map(function(row) {
+      return '<tr><th scope="row">' + escapeHtml(row[0]) + '</th><td class="license-features-tier-cell">' + renderStatusToken(row[1]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[2]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[3]) + '</td></tr>';
+    }).join('');
+    return rows ? ('<tr class="matrix-group-row"><td colspan="4">' + escapeHtml(group.group) + '</td></tr>' + rows) : '';
+  }).join('');
+  var ucxRows = ucxFeatures.map(function(item) { return '<tr><th scope="row">' + escapeHtml(item) + '</th><td class="license-features-tier-cell">' + renderStatusToken('included') + '</td></tr>'; }).join('');
+  var teamRows = teamsIntegrationFeatures.map(function(row) {
+    return '<tr><th scope="row">' + escapeHtml(row[0]) + '</th><td class="license-features-tier-cell">' + renderStatusToken(row[1]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[2]) + '</td></tr>';
+  }).join('');
+  return '<section class="license-features-section"><h2 class="license-hero-title">ElasticCX CCaaS Licence Options &amp; Features</h2><p class="license-hero-subtitle">Compare ECX Voice, ECX Omni, ECX Max and ECX UCX to understand the right licence profile for each user type.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="setEcxLicenseFilter(\'all\')">All Licences</button><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Detailed Feature Matrix</button><input type="text" placeholder="Search capabilities..." oninput="setLicenseFeatureSearch(this.value)" value="' + escapeHtml(licenseFeatureSearchValue || '') + '"></div><div class="license-cards-grid" id="licenseViewPanel">' + licenseCards + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX Voice</th><th>ECX Omni</th><th>ECX Max</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div></div></section><section class="license-features-section"><h3 class="license-features-section-title">ECX UCX Back-office Feature Set</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX UCX</th></tr></thead><tbody>' + ucxRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Presence is limited. No presence on physical handsets. A softphone user may show as logged off, but presence updates when the user receives a call or makes an outbound call.</p></section><section class="license-features-section"><h3 class="license-features-section-title">MS Teams Integration</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Functionality</th><th>MS Teams Standard</th><th>MS Teams Advanced</th></tr></thead><tbody>' + teamRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Does not include Microsoft licences. Microsoft Teams Phone System licence will be required.</p><div class="license-features-legend"><strong>Legend:</strong><ul><li>' + renderStatusToken('included') + ' Included</li><li>' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li>' + renderStatusToken('not_included') + ' Not Included</li><li>' + renderStatusToken('requires_google_ccai') + ' Requires Google CCAI Account</li><li>' + renderStatusToken('needs_confirmation') + ' Needs Confirmation</li></ul></div></section>';
+}
+
+var licenseFeatureSearchValue = '';
+function setLicenseFeatureSearch(value) { licenseFeatureSearchValue = String(value || ''); renderLicenseFeaturesWorkspace(); }
+function setEcxLicenseFilter(licenseId) { ecxSelectedLicense = licenseId; renderLicenseFeaturesWorkspace(); }
+function setLicenseFeaturesPage(tab) { activeLicenseFeaturePage = tab; renderLicenseFeaturesWorkspace(); }
+
+function renderLicenseFeaturesWorkspace() {
+  var root = document.getElementById('licenseFeaturesModuleRoot');
+  if (!root) return;
+  root.className = 'license-features-module';
+  root.innerHTML = '<div class="license-page-tabs"><button class="license-page-tab ' + (activeLicenseFeaturePage === 'ecx' ? 'active' : '') + '" onclick="setLicenseFeaturesPage(\'ecx\')">ElasticCX CCaaS</button><button class="license-page-tab ' + (activeLicenseFeaturePage === 'pci' ? 'active' : '') + '" onclick="setLicenseFeaturesPage(\'pci\')">PCI</button></div>' + (activeLicenseFeaturePage === 'pci' ? renderPciLicenseFeaturesView() : renderEcxLicenseFeaturesView());
 }
 
 function toggleMatrixDetail() {
