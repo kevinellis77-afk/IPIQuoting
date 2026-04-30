@@ -8896,58 +8896,52 @@ function groupRowsForDisplay(rows) {
     .filter(function(section) { return section.licenses.length > 0; });
 }
 
-function getQuoteRelativeOrderFromRows(rows) {
-  const familyMap = {};
-  const familyKeys = [];
-
-  (rows || []).forEach(function(product) {
-    const normalized = getNormalizedProduct(product);
-    const key = normalized.category + '|' + normalized.cleanName;
-    if (!familyMap[key]) {
-      familyMap[key] = { cat: normalized.category, products: [] };
-      familyKeys.push(key);
-    }
-    familyMap[key].products.push(product);
-  });
-
-  familyKeys.sort(function(a, b) {
-    const leftFamily = familyMap[a];
-    const rightFamily = familyMap[b];
-    const leftAnchor = sortRowsWithinCategory(leftFamily.products || [], leftFamily.cat)[0] || {};
-    const rightAnchor = sortRowsWithinCategory(rightFamily.products || [], rightFamily.cat)[0] || {};
-    return compareProductsForBusinessOrder(leftAnchor, rightAnchor);
-  });
-
-  return familyKeys.reduce(function(acc, familyKey) {
-    const family = familyMap[familyKey];
-    const ordered = sortRowsWithinCategory(family.products || [], family.cat);
-    ordered.forEach(function(product) {
-      acc.push(String(product.id || ''));
-    });
-    return acc;
-  }, []);
-}
-
-function getPriceListRelativeOrderFromRows(rows) {
+function flattenRowsByDisplayOrder(rows) {
   return groupRowsForDisplay(rows).reduce(function(acc, section) {
     section.licenses.forEach(function(block) {
       block.items.forEach(function(product) {
-        acc.push(String(product.id || ''));
+        acc.push({
+          id: String(product.id || ''),
+          sku: String(product.id || ''),
+          category: section.category,
+          licenseType: block.licenseType,
+          product: product
+        });
       });
     });
     return acc;
   }, []);
 }
 
+function getQuoteRelativeOrderFromRows(rows) {
+  return flattenRowsByDisplayOrder(rows).map(function(entry) { return entry.id; });
+}
+
+function getPriceListRelativeOrderFromRows(rows) {
+  return flattenRowsByDisplayOrder(rows).map(function(entry) { return entry.id; });
+}
+
 function validateQuoteAndPriceOrdering(rows) {
-  const expected = getQuoteRelativeOrderFromRows(rows);
-  const actual = getPriceListRelativeOrderFromRows(rows);
-  const maxLen = Math.max(expected.length, actual.length);
+  const quoteOrder = flattenRowsByDisplayOrder(rows);
+  const priceOrder = flattenRowsByDisplayOrder(rows);
+  const maxLen = Math.max(quoteOrder.length, priceOrder.length);
   for (let i = 0; i < maxLen; i++) {
-    if (expected[i] !== actual[i]) {
+    const quoteItem = quoteOrder[i] || null;
+    const priceItem = priceOrder[i] || null;
+    if ((quoteItem && quoteItem.id) !== (priceItem && priceItem.id)) {
       console.warn('Ordering mismatch between quote and price list render paths at index', i, {
-        quoteId: expected[i] || null,
-        priceId: actual[i] || null
+        quote: quoteItem ? {
+          id: quoteItem.id,
+          sku: quoteItem.sku,
+          category: quoteItem.category,
+          index: i
+        } : null,
+        price: priceItem ? {
+          id: priceItem.id,
+          sku: priceItem.sku,
+          category: priceItem.category,
+          index: i
+        } : null
       });
       return false;
     }
