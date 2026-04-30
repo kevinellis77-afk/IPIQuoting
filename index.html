@@ -3113,17 +3113,19 @@
       </div>
       <button class="modal-close" onclick="closeAdminUnlockModal()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="email-field" style="margin-bottom:0">
-        <label for="adminUnlockPassword">Admin Password</label>
-        <input id="adminUnlockPassword" type="password" placeholder="Enter password" autocomplete="current-password">
-        <div class="meta-field-helper" style="margin-top:8px;">Interim access only: local password unlock is temporary and will be replaced by Microsoft SSO.</div>
+    <form onsubmit="return handleAdminUnlockSubmit(event)">
+      <div class="modal-body">
+        <div class="email-field" style="margin-bottom:0">
+          <label for="adminUnlockPassword">Admin Password</label>
+          <input id="adminUnlockPassword" type="password" placeholder="Enter password" autocomplete="current-password">
+          <div class="meta-field-helper" style="margin-top:8px;">Interim access only: local password unlock is temporary and will be replaced by Microsoft SSO.</div>
+        </div>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeAdminUnlockModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitAdminUnlock()">Unlock</button>
-    </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" type="button" onclick="closeAdminUnlockModal()">Cancel</button>
+        <button class="btn btn-primary" type="submit">Unlock</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -6836,6 +6838,12 @@ async function submitAdminUnlock() {
   showToast('✓ Admin unlocked for ' + Math.round(ADMIN_UNLOCK_TTL_MS / 60000) + ' minutes');
 }
 
+function handleAdminUnlockSubmit(event) {
+  if (event) event.preventDefault();
+  submitAdminUnlock();
+  return false;
+}
+
 function handleAdminUnlockButtonClick() {
   if (isAdminUnlocked()) {
     lockAdmin();
@@ -7957,15 +7965,6 @@ function showTransientCatalogueLoadSummary(count, firstId, lastId) {
 // ─── PARTNER PRICE LIST LAYER ───────────────────────────────────────────────
 function initPartnerPriceList() {
   initializePriceListMultiSelects();
-  const adminUnlockPasswordInput = document.getElementById('adminUnlockPassword');
-  if (adminUnlockPasswordInput) {
-    adminUnlockPasswordInput.addEventListener('keydown', function(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        submitAdminUnlock();
-      }
-    });
-  }
   populatePriceListProfileControls();
   bindPriceListSorting();
   syncPriceListFilterOptions();
