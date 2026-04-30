@@ -3264,6 +3264,39 @@ const teamsIntegrationFeatures = [
   ['Embedded voice calls into MS Teams client','optional_addon','included'],
   ['Instant Messaging','not_included','included']
 ];
+
+const pciLicences = [
+  { id: 'core', name: 'Cloud PCI (Core Platform)', icon: '🛡️', badge: 'Core Platform', description: 'Core IPI payment suite enabling secure payments across contact centre channels.', keyFeatures: ['Secure PCI payment orchestration', 'Shared foundation for all PCI licences', 'Supports voice and digital payment modules'] },
+  { id: 'pauseable', name: 'Pauseable', icon: '⏸️', badge: 'Compliance Layer', description: 'Automatic pause and resume of call and screen recording using application triggers.', keyFeatures: ['Automated recording pause/resume', 'Trigger-based activation', 'Works with call and screen recording', 'Supports PCI compliance without agent intervention'] },
+  { id: 'standard', name: 'Standard', icon: '📞', badge: 'Voice Payments', description: 'Voice-led secure payment licence for agent-assisted transactions.', keyFeatures: ['Agent Pay (DTMF masking)', 'Automatic Speech Recognition (ASR) payments', '2 x monitored SIP channels per agent', 'Voice-based secure payment capture'] },
+  { id: 'premium', name: 'Premium', icon: '🌐', badge: 'Most Complete', description: 'Full omnichannel secure payment licence.', keyFeatures: ['Includes all Standard features', 'Pay by Link (digital payments)', 'Omnichannel payment support (SMS, email, chat, WhatsApp)', '2 x monitored SIP channels per agent'] },
+  { id: 'digital', name: 'Digital', icon: '💬', badge: 'Digital Only', description: 'Digital-only secure payment licence.', keyFeatures: ['Pay by Link only', 'Omnichannel payment support', 'No voice payment capability', 'Designed for chat, messaging and API-led payments'] }
+];
+const pciModules = [
+  { name: 'Agent Pay', icon: '🛡️', capabilities: ['DTMF masking', 'Secure keypad entry under agent guidance', 'Prevents card data exposure'] },
+  { name: 'Pay by Link', icon: '💬', capabilities: ['Secure payment links', 'Delivered via SMS, email, chat, WhatsApp', 'Real-time agent visibility', 'API-triggered (bots / AI platforms)'] },
+  { name: 'ASR (Automatic Speech Recognition)', icon: '🗣️', capabilities: ['Voice-based card capture', 'Alternative to keypad entry', 'Accessibility support (Equalities Act alignment)', 'Included up to 5% of payments'] },
+  { name: 'Monitored SIP Channels', icon: '📞', capabilities: ['Secure call monitoring channels', '2 included per agent (Standard & Premium)', 'Additional channels purchasable'] },
+  { name: 'IVR Assist', icon: '🤖', capabilities: ['PCI-enables existing IVR systems (cloud or on-prem)', 'Uses API to switch media stream securely', 'Supports legacy IVR environments', 'Includes 20 monitored SIP channels', 'Includes bundled transaction volume'] }
+];
+const pciFeatureMatrix = [
+  { feature: 'Pause/Resume Recording', pauseable: 'included', standard: 'not_included', premium: 'not_included', digital: 'not_included' },
+  { feature: 'Agent Pay (DTMF)', pauseable: 'not_included', standard: 'included', premium: 'included', digital: 'not_included' },
+  { feature: 'ASR Payments', pauseable: 'not_included', standard: 'included', premium: 'included', digital: 'not_included' },
+  { feature: 'Pay by Link', pauseable: 'add_on', standard: 'add_on', premium: 'included', digital: 'included' },
+  { feature: 'Voice Payments', pauseable: 'not_included', standard: 'included', premium: 'included', digital: 'not_included' },
+  { feature: 'Digital Payments', pauseable: 'capacity_dependent', standard: 'add_on', premium: 'included', digital: 'included' },
+  { feature: 'Omnichannel Support', pauseable: 'not_included', standard: 'needs_confirmation', premium: 'included', digital: 'included' },
+  { feature: 'SIP Channels Included', pauseable: 'capacity_dependent', standard: 'included', premium: 'included', digital: 'not_included' },
+  { feature: 'IVR Assist Compatibility', pauseable: 'needs_confirmation', standard: 'add_on', premium: 'add_on', digital: 'needs_confirmation' }
+];
+const pciCapacityRules = [
+  { item: 'Pauseable', rules: ['1 licence per agent', 'Named or concurrent', 'Monthly or annual'] },
+  { item: 'Standard / Premium / Digital', rules: ['1 licence per agent', 'Named or concurrent', 'Monthly or annual', 'Feature access depends on tier'] },
+  { item: 'IVR Assist', rules: ['Prepaid bundle', '1,000 transactions', '20 SIP channels'] },
+  { item: 'Additional SIP Channels', rules: ['Purchased separately', 'Monthly or annual'] },
+  { item: 'Overage', rules: ['All PCI products allow overage', 'Billed monthly in arrears based on usage'] }
+];
 var NORMALIZED_PRODUCT_CACHE = {};
 
 // ─── PRODUCT ATTRIBUTE DERIVATION ────────────────────────────────────────────
@@ -7957,66 +7990,55 @@ function formatLicenseFeatureLabel(value) {
 }
 
 function renderStatusToken(statusKey) {
-  var status = statusTypes[statusKey];
-  if (!status) return '—';
-  return '<span class="license-features-token ' + escapeHtml(status.css) + '">' + escapeHtml(status.token) + '</span>';
+  var pciStatus = {
+    included: { label: 'Included', css: 'included' },
+    not_included: { label: 'Not Included', css: 'not_included' },
+    add_on: { label: 'Add-on', css: 'optional_addon' },
+    capacity_dependent: { label: 'Capacity Dependent', css: 'limited_presence' },
+    needs_confirmation: { label: 'Needs Confirmation', css: 'needs_confirmation' }
+  };
+  var status = pciStatus[statusKey];
+  if (!status) return 'Needs Confirmation';
+  return '<span class="license-features-token ' + escapeHtml(status.css) + '">' + escapeHtml(status.label) + '</span>';
 }
 
 function renderLicenseFeaturesWorkspace() {
   var root = document.getElementById('licenseFeaturesModuleRoot');
   if (!root) return;
-  var licenseCards = licenceOptions.map(function(opt) {
-    return '<article class="license-card" data-license="' + escapeHtml(opt.id) + '"><h4>' + opt.icon + ' ' + escapeHtml(opt.name) + '</h4><p>' + escapeHtml(opt.description) + '</p><ul>' + opt.features.map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></article>';
+  var licenseCards = pciLicences.map(function(opt) {
+    return '<article class="license-card"><h4>' + opt.icon + ' ' + escapeHtml(opt.name) + '</h4><p><strong>' + escapeHtml(opt.badge) + '</strong></p><p>' + escapeHtml(opt.description) + '</p><ul>' + opt.keyFeatures.map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></article>';
   }).join('');
-
-  var matrixRows = featureGroups.map(function(group) {
-    var body = group.rows.map(function(row) {
-      return '<tr><th scope="row">' + escapeHtml(row[0]) + '</th><td data-license="voice">' + renderStatusToken(row[1]) + '</td><td data-license="omni">' + renderStatusToken(row[2]) + '</td><td data-license="max">' + renderStatusToken(row[3]) + '</td></tr>';
-    }).join('');
-    return '<tbody><tr class="matrix-group-row"><td colspan="4">' + escapeHtml(group.group) + '</td></tr>' + body + '</tbody>';
+  var modules = pciModules.map(function(module) {
+    return '<article class="license-card"><h4>' + module.icon + ' ' + escapeHtml(module.name) + '</h4><ul>' + module.capabilities.map(function(c) {
+      var tooltip = '';
+      if (c.toLowerCase().indexOf('dtmf') !== -1) tooltip = ' title="Dual-tone multi-frequency keypad masking."';
+      if (c.toLowerCase().indexOf('asr') !== -1) tooltip = ' title="Automatic speech recognition based payment capture."';
+      if (c.toLowerCase().indexOf('sip') !== -1) tooltip = ' title="Secure monitored SIP channels for PCI voice media."';
+      if (c.toLowerCase().indexOf('ivr assist') !== -1 || module.name === 'IVR Assist') tooltip = ' title="Module that PCI-enables existing IVR streams via API switching."';
+      return '<li' + tooltip + '>' + escapeHtml(c) + '</li>';
+    }).join('') + '</ul></article>';
   }).join('');
-
-  var ucxRows = ucxFeatures.map(function(feature){ return '<tr><th scope="row">' + escapeHtml(feature) + '</th><td>' + renderStatusToken('included') + '</td></tr>'; }).join('');
-  var teamsRows = teamsIntegrationFeatures.map(function(row){ return '<tr><th scope="row">' + escapeHtml(row[0]) + '</th><td>' + renderStatusToken(row[1]) + '</td><td>' + renderStatusToken(row[2]) + '</td></tr>'; }).join('');
-  var legend = Object.keys(statusTypes).map(function(k){ return '<li>' + renderStatusToken(k) + ' ' + escapeHtml(statusTypes[k].label) + '</li>'; }).join('');
+  var matrixRows = pciFeatureMatrix.map(function(row) {
+    return '<tr><th scope="row">' + escapeHtml(row.feature) + '</th><td>' + renderStatusToken(row.pauseable) + '</td><td>' + renderStatusToken(row.standard) + '</td><td>' + renderStatusToken(row.premium) + '</td><td>' + renderStatusToken(row.digital) + '</td></tr>';
+  }).join('');
+  var capacityRows = pciCapacityRules.map(function(rule) {
+    return '<tr><th scope="row">' + escapeHtml(rule.item) + '</th><td>' + rule.rules.map(function(x) { return '<div>• ' + escapeHtml(x) + '</div>'; }).join('') + '</td></tr>';
+  }).join('');
 
   root.className = 'license-features-module';
-  root.innerHTML = '<section class="license-features-section"><h2 class="license-features-section-title">ElasticCX CCaaS Licence Options & Features</h2><p>Compare ECX Voice, ECX Omni, ECX Max and ECX UCX to understand the right licence profile for each user type.</p><div class="license-cards-grid">' + licenseCards + '</div></section>' +
-    '<section class="license-features-section"><div class="license-controls"><input id="licenseFeatureSearch" type="search" placeholder="Search features"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Detailed Feature Matrix</button></div><div class="license-commercial-note">Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div class="license-features-table-wrap"><table class="license-features-table" id="mainFeatureMatrix"><thead><tr><th>Capability</th><th data-license-col="voice">ECX Voice</th><th data-license-col="omni">ECX Omni</th><th data-license-col="max">ECX Max</th></tr></thead>' + matrixRows + '</table></div><div class="license-features-legend"><strong>Legend</strong><ul>' + legend + '</ul></div></section>' +
-    '<section class="license-features-section"><h3 class="license-features-section-title">ECX UCX Feature Set</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX UCX</th></tr></thead><tbody>' + ucxRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Presence is limited. No presence on physical handsets. A softphone user may show as logged off, but presence updates when the user receives a call or makes an outbound call.</p></section>' +
-    '<section class="license-features-section"><h3 class="license-features-section-title">MS Teams Integration</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Functionality</th><th>MS Teams Standard</th><th>MS Teams Advanced</th></tr></thead><tbody>' + teamsRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Does not include Microsoft licences. Microsoft Teams Phone System licence will be required.</p></section>';
-
-  bindLicenseFeatureInteractions();
+  root.innerHTML = '<section class="license-features-section"><h2 class="license-features-section-title">Cloud PCI Secure Payments</h2><p>Enable secure, PCI-compliant payments across voice and digital channels.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div id="licenseViewPanel"><div class="license-cards-grid">' + licenseCards + '</div><h3 class="license-features-section-title" style="margin-top:16px;">Modules &amp; Capabilities</h3><div class="license-cards-grid">' + modules + '</div></div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table" id="mainFeatureMatrix"><thead><tr><th>Feature / Module</th><th>Pauseable</th><th>Standard</th><th>Premium</th><th>Digital</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div></div></section>' +
+    '<section class="license-features-section"><h3 class="license-features-section-title">Licensing &amp; Capacity</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Rule Area</th><th>Capacity / Licensing Rules</th></tr></thead><tbody>' + capacityRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Overage Logic:</strong> All PCI products allow overage and are billed monthly in arrears based on usage.</p></section>';
 }
 
 function toggleMatrixDetail() {
-  var table = document.getElementById('mainFeatureMatrix');
+  var comparisonPanel = document.getElementById('comparisonPanel');
+  var licenseViewPanel = document.getElementById('licenseViewPanel');
   var btn = document.getElementById('matrixToggleBtn');
-  if (!table || !btn) return;
-  table.classList.toggle('summary-mode');
-  btn.textContent = table.classList.contains('summary-mode') ? 'Detailed Feature Matrix' : 'Summary View';
-}
-
-function bindLicenseFeatureInteractions() {
-  var selected = 'all';
-  document.querySelectorAll('.license-card').forEach(function(card){
-    card.addEventListener('click', function(){
-      selected = selected === card.dataset.license ? 'all' : card.dataset.license;
-      document.querySelectorAll('.license-card').forEach(function(c){ c.classList.toggle('active', c===card && selected!== 'all'); });
-      ['voice','omni','max'].forEach(function(col){
-        document.querySelectorAll('[data-license-col="'+col+'"],[data-license="'+col+'"]').forEach(function(el){ el.style.display = (selected==='all' || selected===col) ? '' : 'none'; });
-      });
-    });
-  });
-  var search = document.getElementById('licenseFeatureSearch');
-  if (search) search.addEventListener('input', function(){
-    var q = search.value.toLowerCase();
-    document.querySelectorAll('#mainFeatureMatrix tbody tr').forEach(function(tr){
-      if (tr.querySelector('.matrix-group-row')) return;
-      var txt = tr.textContent.toLowerCase();
-      tr.style.display = !q || txt.indexOf(q) !== -1 ? '' : 'none';
-    });
-  });
+  if (!comparisonPanel || !licenseViewPanel || !btn) return;
+  var showComparison = comparisonPanel.style.display === 'none';
+  comparisonPanel.style.display = showComparison ? '' : 'none';
+  licenseViewPanel.style.display = showComparison ? 'none' : '';
+  btn.textContent = showComparison ? 'Licence View' : 'Feature Comparison';
 }
 
 function getCurrentWorkspace() {
