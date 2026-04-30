@@ -2657,9 +2657,13 @@
     align-items: center;
     gap: 6px;
   }
-  .license-page-tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-  .license-page-tab { border:1px solid var(--border); background:#fff; color:var(--charcoal); border-radius:999px; padding:7px 12px; cursor:pointer; font-weight:600; }
+  .license-page-tabs { display:inline-flex; gap:0; margin-bottom:12px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; }
+  .license-page-tab { appearance:none; border:0; border-right:1px solid var(--border); background:#fff; color:var(--charcoal); border-radius:0; min-height:38px; min-width:150px; padding:9px 16px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; justify-content:center; flex:1 1 0; transition:background-color .2s ease,color .2s ease; }
+  .license-page-tab:last-child { border-right:0; }
+  .license-page-tab:hover { background:var(--light-gray); }
+  .license-page-tab:focus-visible { outline:2px solid var(--blue); outline-offset:-2px; position:relative; z-index:1; }
   .license-page-tab.active { background:var(--charcoal); color:#fff; border-color:var(--charcoal); }
+  .license-page-tab.active:hover { background:#111; }
   .license-hero-title { font-size: 24px; margin-bottom: 6px; }
   .license-hero-subtitle { color: var(--text-muted); margin-bottom: 6px; }
   .license-card-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 8px; }
