@@ -2609,10 +2609,19 @@
     text-align: center;
     white-space: nowrap;
   }
+  .license-features-table tbody td {
+    text-align: center;
+  }
+  .license-features-table th[scope="row"] {
+    text-align: left;
+  }
   .license-features-token {
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25em;
   }
   .license-features-token.included { color: #23845b; }
   .license-features-token.optional_addon { color: #9aa7b1; }
@@ -2642,6 +2651,11 @@
   .license-features-footnotes ul {
     margin: 6px 0 0;
     padding-left: 18px;
+  }
+  .license-features-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .license-page-tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
   .license-page-tab { border:1px solid var(--border); background:#fff; color:var(--charcoal); border-radius:999px; padding:7px 12px; cursor:pointer; font-weight:600; }
@@ -7998,16 +8012,19 @@ var activeLicenseFeaturePage = 'ecx';
 var ecxSelectedLicense = 'all';
 
 function renderStatusToken(statusKey) {
-  var pciStatus = {
-    included: { label: 'Included', css: 'included' },
-    not_included: { label: 'Not Included', css: 'not_included' },
-    add_on: { label: 'Add-on', css: 'optional_addon' },
-    capacity_dependent: { label: 'Capacity Dependent', css: 'limited_presence' },
-    needs_confirmation: { label: 'Needs Confirmation', css: 'needs_confirmation' }
+  var statusMap = {
+    included: { label: 'Included', css: 'included', icon: '✓' },
+    optional_addon: { label: 'Optional Add-on', css: 'optional_addon', icon: '＋' },
+    add_on: { label: 'Add-on', css: 'optional_addon', icon: '＋' },
+    not_included: { label: 'Not Included', css: 'not_included', icon: '✕' },
+    requires_integration: { label: 'Requires Integration', css: 'requires_integration', icon: '?' },
+    requires_google_ccai: { label: 'Requires Google CCAI Account', css: 'requires_google_ccai', icon: '?' },
+    limited_presence: { label: 'Limited Presence', css: 'limited_presence', icon: '−' },
+    capacity_dependent: { label: 'Capacity Dependent', css: 'limited_presence', icon: '−' },
+    needs_confirmation: { label: 'Needs Confirmation', css: 'needs_confirmation', icon: '?' }
   };
-  var status = pciStatus[statusKey];
-  if (!status) return 'Needs Confirmation';
-  return '<span class="license-features-token ' + escapeHtml(status.css) + '">' + escapeHtml(status.label) + '</span>';
+  var status = statusMap[statusKey] || statusMap.needs_confirmation;
+  return '<span class="license-features-token ' + escapeHtml(status.css) + '" role="img" aria-label="' + escapeHtml(status.label) + '" title="' + escapeHtml(status.label) + '">' + escapeHtml(status.icon) + '</span>';
 }
 
 function renderPciLicenseFeaturesView() {
@@ -8025,10 +8042,10 @@ function renderPciLicenseFeaturesView() {
     }).join('') + '</ul></article>';
   }).join('');
   var matrixRows = pciFeatureMatrix.map(function(row) {
-    return '<tr><th scope="row">' + escapeHtml(row.feature) + '</th><td>' + renderStatusToken(row.pauseable) + '</td><td>' + renderStatusToken(row.standard) + '</td><td>' + renderStatusToken(row.premium) + '</td><td>' + renderStatusToken(row.digital) + '</td></tr>';
+    return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(row.feature) + '</th><td>' + renderStatusToken(row.pauseable) + '</td><td>' + renderStatusToken(row.standard) + '</td><td>' + renderStatusToken(row.premium) + '</td><td>' + renderStatusToken(row.digital) + '</td></tr>';
   }).join('');
   var capacityRows = pciCapacityRules.map(function(rule) {
-    return '<tr><th scope="row">' + escapeHtml(rule.item) + '</th><td>' + rule.rules.map(function(x) { return '<div>• ' + escapeHtml(x) + '</div>'; }).join('') + '</td></tr>';
+    return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(rule.item) + '</th><td>' + rule.rules.map(function(x) { return '<div>• ' + escapeHtml(x) + '</div>'; }).join('') + '</td></tr>';
   }).join('');
 
   return '<section class="license-features-section"><h2 class="license-features-section-title">Cloud PCI Secure Payments</h2><p>Enable secure, PCI-compliant payments across voice and digital channels.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div id="licenseViewPanel"><div class="license-cards-grid">' + licenseCards + '</div><h3 class="license-features-section-title" style="margin-top:16px;">Modules &amp; Capabilities</h3><div class="license-cards-grid">' + modules + '</div></div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table" id="mainFeatureMatrix"><thead><tr><th>Feature / Module</th><th>Pauseable</th><th>Standard</th><th>Premium</th><th>Digital</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div></div></section>' +
@@ -8042,15 +8059,15 @@ function renderEcxLicenseFeaturesView() {
   }).join('');
   var matrixRows = featureGroups.map(function(group) {
     var rows = group.rows.filter(function(row) { return !licenseFeatureSearchValue || row[0].toLowerCase().indexOf(licenseFeatureSearchValue.toLowerCase()) !== -1; }).map(function(row) {
-      return '<tr><th scope="row">' + escapeHtml(row[0]) + '</th><td class="license-features-tier-cell">' + renderStatusToken(row[1]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[2]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[3]) + '</td></tr>';
+      return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(row[0]) + '</th><td class="license-features-tier-cell">' + renderStatusToken(row[1]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[2]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[3]) + '</td></tr>';
     }).join('');
     return rows ? ('<tr class="matrix-group-row"><td colspan="4">' + escapeHtml(group.group) + '</td></tr>' + rows) : '';
   }).join('');
-  var ucxRows = ucxFeatures.map(function(item) { return '<tr><th scope="row">' + escapeHtml(item) + '</th><td class="license-features-tier-cell">' + renderStatusToken('included') + '</td></tr>'; }).join('');
+  var ucxRows = ucxFeatures.map(function(item) { return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(item) + '</th><td class="license-features-tier-cell">' + renderStatusToken('included') + '</td></tr>'; }).join('');
   var teamRows = teamsIntegrationFeatures.map(function(row) {
-    return '<tr><th scope="row">' + escapeHtml(row[0]) + '</th><td class="license-features-tier-cell">' + renderStatusToken(row[1]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[2]) + '</td></tr>';
+    return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(row[0]) + '</th><td class="license-features-tier-cell">' + renderStatusToken(row[1]) + '</td><td class="license-features-tier-cell">' + renderStatusToken(row[2]) + '</td></tr>';
   }).join('');
-  return '<section class="license-features-section"><h2 class="license-hero-title">ElasticCX CCaaS Licence Options &amp; Features</h2><p class="license-hero-subtitle">Compare ECX Voice, ECX Omni, ECX Max and ECX UCX to understand the right licence profile for each user type.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="setEcxLicenseFilter(\'all\')">All Licences</button><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Detailed Feature Matrix</button><input type="text" placeholder="Search capabilities..." oninput="setLicenseFeatureSearch(this.value)" value="' + escapeHtml(licenseFeatureSearchValue || '') + '"></div><div class="license-cards-grid" id="licenseViewPanel">' + licenseCards + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX Voice</th><th>ECX Omni</th><th>ECX Max</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div></div></section><section class="license-features-section"><h3 class="license-features-section-title">ECX UCX Back-office Feature Set</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX UCX</th></tr></thead><tbody>' + ucxRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Presence is limited. No presence on physical handsets. A softphone user may show as logged off, but presence updates when the user receives a call or makes an outbound call.</p></section><section class="license-features-section"><h3 class="license-features-section-title">MS Teams Integration</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Functionality</th><th>MS Teams Standard</th><th>MS Teams Advanced</th></tr></thead><tbody>' + teamRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Does not include Microsoft licences. Microsoft Teams Phone System licence will be required.</p><div class="license-features-legend"><strong>Legend:</strong><ul><li>' + renderStatusToken('included') + ' Included</li><li>' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li>' + renderStatusToken('not_included') + ' Not Included</li><li>' + renderStatusToken('requires_google_ccai') + ' Requires Google CCAI Account</li><li>' + renderStatusToken('needs_confirmation') + ' Needs Confirmation</li></ul></div></section>';
+  return '<section class="license-features-section"><h2 class="license-hero-title">ElasticCX CCaaS Licence Options &amp; Features</h2><p class="license-hero-subtitle">Compare ECX Voice, ECX Omni, ECX Max and ECX UCX to understand the right licence profile for each user type.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="setEcxLicenseFilter(\'all\')">All Licences</button><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Detailed Feature Matrix</button><input type="text" placeholder="Search capabilities..." oninput="setLicenseFeatureSearch(this.value)" value="' + escapeHtml(licenseFeatureSearchValue || '') + '"></div><div class="license-cards-grid" id="licenseViewPanel">' + licenseCards + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX Voice</th><th>ECX Omni</th><th>ECX Max</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div></div></section><section class="license-features-section"><h3 class="license-features-section-title">ECX UCX Back-office Feature Set</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX UCX</th></tr></thead><tbody>' + ucxRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Presence is limited. No presence on physical handsets. A softphone user may show as logged off, but presence updates when the user receives a call or makes an outbound call.</p></section><section class="license-features-section"><h3 class="license-features-section-title">MS Teams Integration</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Functionality</th><th>MS Teams Standard</th><th>MS Teams Advanced</th></tr></thead><tbody>' + teamRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Does not include Microsoft licences. Microsoft Teams Phone System licence will be required.</p><div class="license-features-legend"><strong>Legend:</strong><ul><li class="license-features-legend-item">' + renderStatusToken('included') + ' Included</li><li class="license-features-legend-item">' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li class="license-features-legend-item">' + renderStatusToken('not_included') + ' Not Included</li><li class="license-features-legend-item">' + renderStatusToken('requires_google_ccai') + ' Requires Google CCAI Account</li><li class="license-features-legend-item">' + renderStatusToken('needs_confirmation') + ' Needs Confirmation</li></ul></div></section>';
 }
 
 var licenseFeatureSearchValue = '';
