@@ -2633,23 +2633,31 @@
 
   .license-cards-grid {
     display:grid;
-    gap:12px;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    margin-top:12px;
+    gap:16px;
+    grid-template-columns:repeat(2,minmax(280px,1fr));
+    margin:14px 0 18px;
+    max-width:980px;
     height:auto;
     max-height:none;
     overflow:visible;
+  }
+  .license-cards-grid.license-cards-grid--single {
+    grid-template-columns:minmax(320px,1fr);
+    max-width:640px;
   }
   #licenseViewPanel {
     height:auto;
     max-height:none;
     overflow:visible;
   }
-  .license-card { border:1px solid var(--border); border-radius:12px; padding:12px; background:#fff; cursor:pointer; }
+  .license-card { border:1px solid var(--border); border-radius:12px; padding:14px; background:#fff; cursor:pointer; }
   .license-card.active { border-color: var(--mauve); box-shadow: 0 0 0 2px rgba(163,121,146,0.18); }
-  .license-card h4 { margin:0 0 8px; }
-  .license-card p { color:var(--text-muted); margin-bottom:8px; }
-  .license-card ul { padding-left:18px; max-height:none; overflow:visible; }
+  .license-card-heading { margin:0; display:flex; align-items:baseline; gap:8px; font-size:17px; font-weight:700; line-height:1.3; color:var(--charcoal-dark); }
+  .license-card-icon { font-size:18px; line-height:1; display:inline-flex; align-items:center; }
+  .license-card-subheading { color:var(--text-muted); margin:7px 0 10px; font-size:13px; line-height:1.4; }
+  .license-card-features { display:flex; flex-direction:column; gap:6px; margin-top:2px; }
+  .license-card-feature-row { border-radius:8px; background:#f3f6f9; color:var(--charcoal-dark); padding:7px 10px; font-size:14px; font-weight:500; line-height:1.45; overflow-wrap:anywhere; }
+  .license-card-feature-row--alt { background:#eaf0f5; }
   .license-controls { display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
   .license-controls input { border:1px solid var(--border); border-radius:8px; padding:7px 10px; min-width:220px; }
   .license-commercial-note { background:var(--green-pale); border-left:4px solid var(--green); padding:10px 12px; border-radius:8px; margin-bottom:10px; }
@@ -2700,6 +2708,12 @@
   @media print {
     .license-features-table-wrap { overflow: visible; }
     .license-features-table { min-width: 0; }
+  }
+  @media (max-width: 980px) {
+    .license-cards-grid {
+      grid-template-columns:1fr;
+      max-width:none;
+    }
   }
 
 @media (max-width: 980px) {
@@ -8057,6 +8071,25 @@ function renderStatusToken(statusKey) {
   return '<span class="license-features-token ' + escapeHtml(status.css) + '" role="img" aria-label="' + escapeHtml(status.label) + '" title="' + escapeHtml(status.label) + '">' + escapeHtml(status.icon) + '</span>';
 }
 
+function renderLicenseFeatureRows(items, includeTooltip) {
+  return '<div class="license-card-features">' + items.map(function(item, idx) {
+    var tooltip = '';
+    if (includeTooltip) {
+      var lc = String(item || '').toLowerCase();
+      if (lc.indexOf('dtmf') !== -1) tooltip = ' title="Dual-tone multi-frequency keypad masking."';
+      if (lc.indexOf('asr') !== -1) tooltip = ' title="Automatic speech recognition based payment capture."';
+      if (lc.indexOf('sip') !== -1) tooltip = ' title="Secure monitored SIP channels for PCI voice media."';
+      if (lc.indexOf('ivr assist') !== -1) tooltip = ' title="Module that PCI-enables existing IVR streams via API switching."';
+    }
+    var rowClass = 'license-card-feature-row' + (idx % 2 ? ' license-card-feature-row--alt' : '');
+    return '<div class="' + rowClass + '"' + tooltip + '>' + escapeHtml(item) + '</div>';
+  }).join('') + '</div>';
+}
+
+function renderLicenseCard(icon, heading, subheading, features, includeTooltip) {
+  return '<article class="license-card"><h4 class="license-card-heading"><span class="license-card-icon">' + escapeHtml(icon) + '</span><span>' + escapeHtml(heading) + '</span></h4><p class="license-card-subheading">' + escapeHtml(subheading) + '</p>' + renderLicenseFeatureRows(features, includeTooltip) + '</article>';
+}
+
 
 function renderEcxLicenseFeaturesView() {
   var normalizedSearch = licenseFeatureSearchValue.trim().toLowerCase();
@@ -8066,7 +8099,7 @@ function renderEcxLicenseFeaturesView() {
     return haystack.indexOf(normalizedSearch) !== -1;
   });
   var licenseCards = filteredLicences.map(function(opt) {
-    return '<article class="license-card"><h4>' + opt.icon + ' ' + escapeHtml(opt.name) + '</h4><p>' + escapeHtml(opt.description) + '</p><ul>' + opt.features.map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></article>';
+    return renderLicenseCard(opt.icon, opt.name, opt.description, opt.features, false);
   }).join('');
   if (!licenseCards) {
     licenseCards = '<div class="license-empty-state">No licence options match the current filters.</div>';
@@ -8092,17 +8125,10 @@ function renderEcxLicenseFeaturesView() {
 
 function renderPciLicenseFeaturesView() {
   var licenseCards = pciLicences.map(function(opt) {
-    return '<article class="license-card"><h4>' + opt.icon + ' ' + escapeHtml(opt.name) + '</h4><p><strong>' + escapeHtml(opt.badge) + '</strong></p><p>' + escapeHtml(opt.description) + '</p><ul>' + opt.keyFeatures.map(function(f){ return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></article>';
+    return renderLicenseCard(opt.icon, opt.name, opt.badge + ' • ' + opt.description, opt.keyFeatures, false);
   }).join('');
   var modules = pciModules.map(function(module) {
-    return '<article class="license-card"><h4>' + module.icon + ' ' + escapeHtml(module.name) + '</h4><ul>' + module.capabilities.map(function(c) {
-      var tooltip = '';
-      if (c.toLowerCase().indexOf('dtmf') !== -1) tooltip = ' title="Dual-tone multi-frequency keypad masking."';
-      if (c.toLowerCase().indexOf('asr') !== -1) tooltip = ' title="Automatic speech recognition based payment capture."';
-      if (c.toLowerCase().indexOf('sip') !== -1) tooltip = ' title="Secure monitored SIP channels for PCI voice media."';
-      if (c.toLowerCase().indexOf('ivr assist') !== -1 || module.name === 'IVR Assist') tooltip = ' title="Module that PCI-enables existing IVR streams via API switching."';
-      return '<li' + tooltip + '>' + escapeHtml(c) + '</li>';
-    }).join('') + '</ul></article>';
+    return renderLicenseCard(module.icon, module.name, 'Capability module', module.capabilities, true);
   }).join('');
   var matrixRows = pciFeatureMatrix.map(function(row) {
     return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(row.feature) + '</th><td>' + renderStatusToken(row.pauseable) + '</td><td>' + renderStatusToken(row.standard) + '</td><td>' + renderStatusToken(row.premium) + '</td><td>' + renderStatusToken(row.digital) + '</td></tr>';
