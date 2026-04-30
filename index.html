@@ -2741,7 +2741,6 @@
       </button>
       <div class="toolbar-menu-panel hidden" id="actionsMenu"></div>
     </div>
-    <button class="btn btn-outline" id="adminUnlockBtn" onclick="handleAdminUnlockButtonClick()">Unlock Admin</button>
     <input type="file" id="productCsvUpload" accept=".csv,text/csv" class="hidden" onchange="handleProductImportFile(event)">
     <span id="saveVersionBtnLabel" class="hidden">Save v1</span>
     <button class="help-btn" onclick="openHelpModal()" title="Help & Guide">?</button>
@@ -8194,8 +8193,7 @@ function updateToolbarState() {
   const workspaceBtn = document.getElementById('workspaceMenuBtn');
   const actionsBtn = document.getElementById('actionsMenuBtn');
   const actionsMenu = document.getElementById('actionsMenu');
-  const adminUnlockBtn = document.getElementById('adminUnlockBtn');
-  if (!workspaceBtn || !actionsBtn || !actionsMenu || !adminUnlockBtn) return;
+  if (!workspaceBtn || !actionsBtn || !actionsMenu) return;
   const adminUnlocked = isAdminUnlocked();
 
   const workspaceLabel = workspace === 'quote'
@@ -8204,9 +8202,6 @@ function updateToolbarState() {
       ? 'Partner Price List'
       : (workspace === 'licenseFeatures' ? 'License Options & Features' : 'Launchpad'));
   workspaceBtn.firstChild.textContent = workspaceLabel + ' ';
-  adminUnlockBtn.textContent = adminUnlocked ? 'Lock Admin' : 'Unlock Admin';
-  adminUnlockBtn.className = adminUnlocked ? 'btn btn-secondary' : 'btn btn-outline';
-
   if (workspace === 'quote') {
     actionsBtn.classList.remove('hidden');
     actionsMenu.innerHTML = '' +
@@ -8267,6 +8262,13 @@ function updateToolbarState() {
         '<button class="toolbar-menu-item" onclick="downloadAuditLogCsv(); closeToolbarMenus();">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
           'Download Audit Log CSV' +
+        '</button>' +
+      '</div>' +
+      '<div class="toolbar-menu-group">' +
+        '<div class="toolbar-menu-group-title">Admin Access</div>' +
+        '<button class="toolbar-menu-item" onclick="handleAdminUnlockButtonClick(); closeToolbarMenus();">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 11V8a5 5 0 0 1 10 0v3"></path><rect x="5" y="11" width="14" height="10" rx="2"></rect><circle cx="12" cy="16" r="1"></circle></svg>' +
+          (adminUnlocked ? 'Lock Admin' : 'Unlock Admin') +
         '</button>' +
       '</div>';
   } else if (workspace === 'price') {
@@ -8330,6 +8332,13 @@ function updateToolbarState() {
         '<div class="toolbar-menu-item is-static" aria-label="Catalogue source">' +
           catalogueSourceText +
         '</div>' +
+      '</div>' +
+      '<div class="toolbar-menu-group">' +
+        '<div class="toolbar-menu-group-title">Admin Access</div>' +
+        '<button class="toolbar-menu-item" onclick="handleAdminUnlockButtonClick(); closeToolbarMenus();">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 11V8a5 5 0 0 1 10 0v3"></path><rect x="5" y="11" width="14" height="10" rx="2"></rect><circle cx="12" cy="16" r="1"></circle></svg>' +
+          (adminUnlocked ? 'Lock Admin' : 'Unlock Admin') +
+        '</button>' +
       '</div>';
   } else {
     actionsBtn.classList.remove('hidden');
@@ -8343,6 +8352,13 @@ function updateToolbarState() {
         '<button class="toolbar-menu-item" onclick="downloadAuditLogCsv(); closeToolbarMenus();">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
           'Download Audit Log CSV' +
+        '</button>' +
+      '</div>' +
+      '<div class="toolbar-menu-group">' +
+        '<div class="toolbar-menu-group-title">Admin Access</div>' +
+        '<button class="toolbar-menu-item" onclick="handleAdminUnlockButtonClick(); closeToolbarMenus();">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 11V8a5 5 0 0 1 10 0v3"></path><rect x="5" y="11" width="14" height="10" rx="2"></rect><circle cx="12" cy="16" r="1"></circle></svg>' +
+          (adminUnlocked ? 'Lock Admin' : 'Unlock Admin') +
         '</button>' +
       '</div>' +
       '<div class="toolbar-menu-empty">Choose Quoting Tool or Partner Price List from Workspace to see contextual actions.</div>';
