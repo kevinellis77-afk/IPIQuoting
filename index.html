@@ -8168,7 +8168,7 @@ function renderLicenseFeaturesWorkspace() {
   var root = document.getElementById('licenseFeaturesModuleRoot');
   if (!root) return;
   root.className = 'license-features-module';
-  root.innerHTML = '<div class="license-page-tabs"><button class="license-page-tab ' + (activeLicenseFeaturePage === 'ecx' ? 'active' : '') + '" onclick="setLicenseFeaturesPage(\'ecx\')">ElasticCX</button><button class="license-page-tab ' + (activeLicenseFeaturePage === 'pci' ? 'active' : '') + '" onclick="setLicenseFeaturesPage(\'pci\')">PCI</button></div>' + (activeLicenseFeaturePage === 'pci' ? renderPciLicenseFeaturesView() : renderEcxLicenseFeaturesView());
+  root.innerHTML = '<div class="license-page-tabs"><button class="license-page-tab ' + (activeLicenseFeaturePage === 'ecx' ? 'active' : '') + '" onclick="setLicenseFeaturesPage(\'ecx\')">ElasticCX</button><button class="license-page-tab ' + (activeLicenseFeaturePage === 'pci' ? 'active' : '') + '" onclick="setLicenseFeaturesPage(\'pci\')">PCI Cloud</button></div>' + (activeLicenseFeaturePage === 'pci' ? renderPciLicenseFeaturesView() : renderEcxLicenseFeaturesView());
 }
 
 function toggleMatrixDetail() {
