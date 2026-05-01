@@ -2676,6 +2676,7 @@
     letter-spacing: 0.01em;
   }
   .license-features-token.not_included { color:#9aa7b1; }
+  .license-features-token.not_available { color:#6f7d87; }
   .license-features-token.requires_google_ccai { color:#8a5aa3; font-weight:700; }
   .license-features-token.needs_confirmation { color:#c17c2d; font-weight:700; }
   .license-features-legend,
@@ -3286,6 +3287,7 @@ const statusTypes = {
   included: { label: 'Included', token: '●', css: 'included' },
   optional_addon: { label: 'Optional add-on', token: '○', css: 'optional_addon' },
   not_included: { label: 'Not included', token: '—', css: 'not_included' },
+  not_available: { label: 'Not available', token: '∅', css: 'not_available' },
   requires_google_ccai: { label: 'Requires Google CCAI Account', token: '*', css: 'requires_google_ccai' },
   needs_confirmation: { label: 'Needs confirmation', token: '?', css: 'needs_confirmation' }
 };
@@ -3338,9 +3340,9 @@ const ucxFeatures = [
 
 const teamsIntegrationFeatures = [
   ['MS Teams Integration - On-net calls between users','included','included'],
-  ['Presence Status','included','included'],
-  ['Embedded voice calls into MS Teams client','optional_addon','included'],
-  ['Instant Messaging','not_included','included']
+  ['Presence Status','not_included','included'],
+  ['Embedded voice calls into MS Teams client','not_available','included'],
+  ['Instant Messaging','not_included','not_available']
 ];
 
 const pciLicences = [
@@ -8070,6 +8072,7 @@ function renderStatusToken(statusKey) {
     optional_addon: { label: 'Optional Add-on', css: 'optional_addon', icon: '＋' },
     add_on: { label: 'Add-on', css: 'optional_addon', icon: '＋' },
     not_included: { label: 'Not Included', css: 'not_included', icon: '✕' },
+    not_available: { label: 'Not Available', css: 'not_available', icon: '∅' },
     requires_integration: { label: 'Requires Integration', css: 'requires_integration', icon: '?' },
     requires_google_ccai: { label: 'Requires Google CCAI Account', css: 'requires_google_ccai', icon: '?' },
     limited_presence: { label: 'Limited Presence', css: 'limited_presence', icon: '−' },
@@ -8122,7 +8125,7 @@ function renderEcxLicenseFeaturesView() {
     return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(row[0]) + '</th><td>' + renderStatusToken(row[1]) + '</td><td>' + renderStatusToken(row[2]) + '</td></tr>';
   }).join('');
 
-  return '<section class="license-features-section"><h2 class="license-features-section-title">ElasticCX CCaaS Licence Options</h2><p>Review ECX licence tiers, included capabilities, and optional add-ons.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div class="license-cards-grid license-cards-grid--compact" id="licenseViewPanel">' + licenseCards + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX Voice</th><th>ECX Omni</th><th>ECX Max</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note ¹:</strong> Requires integration to a Google CCAI account.</p><section class="license-features-section"><h3 class="license-features-section-title">ECX UCX Back-office Feature Set</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX UCX</th></tr></thead><tbody>' + ucxRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Presence is limited. No presence on physical handsets. A softphone user may show as logged off, but presence updates when the user receives a call or makes an outbound call.</p></section><section class="license-features-section"><h3 class="license-features-section-title">MS Teams Integration</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Functionality</th><th>MS Teams Standard</th><th>MS Teams Advanced</th></tr></thead><tbody>' + teamRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Does not include Microsoft licences. Microsoft Teams Phone System licence will be required.</p><div class="license-features-legend"><strong>Legend:</strong><ul><li class="license-features-legend-item">' + renderStatusToken('included') + ' Included</li><li class="license-features-legend-item">' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li class="license-features-legend-item">' + renderStatusToken('not_included') + ' Not Included</li><li class="license-features-legend-item">' + renderStatusToken('requires_google_ccai') + ' Requires Google CCAI Account</li><li class="license-features-legend-item">' + renderStatusToken('needs_confirmation') + ' Needs Confirmation</li></ul></div></section></div></section>';
+  return '<section class="license-features-section"><h2 class="license-features-section-title">ElasticCX CCaaS Licence Options</h2><p>Review ECX licence tiers, included capabilities, and optional add-ons.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div class="license-cards-grid license-cards-grid--compact" id="licenseViewPanel">' + licenseCards + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX Voice</th><th>ECX Omni</th><th>ECX Max</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note ¹:</strong> Requires integration to a Google CCAI account.</p><section class="license-features-section"><h3 class="license-features-section-title">ECX UCX Back-office Feature Set</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>ECX UCX</th></tr></thead><tbody>' + ucxRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Presence is limited. No presence on physical handsets. A softphone user may show as logged off, but presence updates when the user receives a call or makes an outbound call.</p></section><section class="license-features-section"><h3 class="license-features-section-title">MS Teams Integration</h3><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Functionality</th><th>MS Teams Standard</th><th>MS Teams Advanced</th></tr></thead><tbody>' + teamRows + '</tbody></table></div><p class="license-features-footnotes"><strong>Note:</strong> Does not include Microsoft licences. Microsoft Teams Phone System licence will be required.</p><div class="license-features-legend"><strong>Legend:</strong><ul><li class="license-features-legend-item">' + renderStatusToken('included') + ' Included</li><li class="license-features-legend-item">' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li class="license-features-legend-item">' + renderStatusToken('not_included') + ' Not Included</li><li class="license-features-legend-item">' + renderStatusToken('not_available') + ' Not Available</li><li class="license-features-legend-item">' + renderStatusToken('requires_google_ccai') + ' Requires Google CCAI Account</li><li class="license-features-legend-item">' + renderStatusToken('needs_confirmation') + ' Needs Confirmation</li></ul></div></section></div></section>';
 }
 
 function renderPciLicenseFeaturesView() {
