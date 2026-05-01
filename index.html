@@ -8090,14 +8090,11 @@ function renderStatusToken(statusKey) {
     optional_addon: { label: 'Optional Add-on', css: 'optional_addon', icon: '＋' },
     add_on: { label: 'Add-on', css: 'optional_addon', icon: '＋' },
     not_included: { label: 'Not Included', css: 'not_included', icon: '✕' },
-    not_available: { label: 'Not Available', css: 'not_available', icon: '∅' },
     requires_integration: { label: 'Requires Integration', css: 'requires_integration', icon: '?' },
-    requires_google_ccai: { label: 'Requires Google CCAI Account', css: 'requires_google_ccai', icon: '?' },
     limited_presence: { label: 'Limited Presence', css: 'limited_presence', icon: '−' },
-    capacity_dependent: { label: 'Capacity Dependent', css: 'limited_presence', icon: '−' },
-    needs_confirmation: { label: 'Needs Confirmation', css: 'needs_confirmation', icon: '?' }
+    capacity_dependent: { label: 'Capacity Dependent', css: 'limited_presence', icon: '−' }
   };
-  var status = statusMap[statusKey] || statusMap.needs_confirmation;
+  var status = statusMap[statusKey] || statusMap.not_included;
   return '<span class="license-features-token ' + escapeHtml(status.css) + '" role="img" aria-label="' + escapeHtml(status.label) + '" title="' + escapeHtml(status.label) + '">' + escapeHtml(status.icon) + '</span>';
 }
 
