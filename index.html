@@ -8085,14 +8085,11 @@ function renderStatusToken(statusKey) {
     optional_addon: { label: 'Optional Add-on', css: 'optional_addon', icon: '＋' },
     add_on: { label: 'Add-on', css: 'optional_addon', icon: '＋' },
     not_included: { label: 'Not Included', css: 'not_included', icon: '✕' },
-    not_available: { label: 'Not Available', css: 'not_available', icon: '∅' },
     requires_integration: { label: 'Requires Integration', css: 'requires_integration', icon: '?' },
-    requires_google_ccai: { label: 'Requires Google CCAI Account', css: 'requires_google_ccai', icon: '?' },
     limited_presence: { label: 'Limited Presence', css: 'limited_presence', icon: '−' },
-    capacity_dependent: { label: 'Capacity Dependent', css: 'limited_presence', icon: '−' },
-    needs_confirmation: { label: 'Needs Confirmation', css: 'needs_confirmation', icon: '?' }
+    capacity_dependent: { label: 'Capacity Dependent', css: 'limited_presence', icon: '−' }
   };
-  var status = statusMap[statusKey] || statusMap.needs_confirmation;
+  var status = statusMap[statusKey] || statusMap.not_included;
   return '<span class="license-features-token ' + escapeHtml(status.css) + '" role="img" aria-label="' + escapeHtml(status.label) + '" title="' + escapeHtml(status.label) + '">' + escapeHtml(status.icon) + '</span>';
 }
 
@@ -8176,7 +8173,7 @@ function renderPciLicenseFeaturesView() {
     return '<tr><th scope="row" class="license-features-row-header">' + escapeHtml(rule.item) + '</th><td>' + rule.rules.map(function(x) { return '<div>• ' + escapeHtml(x) + '</div>'; }).join('') + '</td></tr>';
   }).join('');
 
-  return '<section class="license-features-section"><h2 class="license-features-section-title">Cloud PCI Secure Payments</h2><p>Enable secure, PCI-compliant payments across voice and digital channels.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div class="license-cards-grid license-cards-grid--compact" id="licenseViewPanel">' + licenseCards + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>Pauseable</th><th>Standard</th><th>Premium</th><th>Digital</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capacity / Commercial Rule</th><th>Details</th></tr></thead><tbody>' + capacityRows + '</tbody></table></div><div class="license-features-legend"><strong>Legend:</strong><ul><li class="license-features-legend-item">' + renderStatusToken('included') + ' Included</li><li class="license-features-legend-item">' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li class="license-features-legend-item">' + renderStatusToken('not_included') + ' Not Included</li><li class="license-features-legend-item">' + renderStatusToken('needs_confirmation') + ' Needs Confirmation</li></ul></div></div></section>';
+  return '<section class="license-features-section"><h2 class="license-features-section-title">Cloud PCI Secure Payments</h2><p>Enable secure, PCI-compliant payments across voice and digital channels.</p><div class="license-controls"><button class="btn btn-outline btn-sm" onclick="toggleMatrixDetail()" id="matrixToggleBtn">Feature Comparison</button></div><div class="license-cards-grid license-cards-grid--compact" id="licenseViewPanel">' + licenseCards + '</div><div class="license-commercial-note"><strong>Important commercial note:</strong> Storage and PSTN inclusive volumes are only allocated to committed licences. On-demand or overage licences can use the platform, but they do not increase allocated storage or PSTN minute volumes.</div><div id="comparisonPanel" style="display:none;"><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capability</th><th>Pauseable</th><th>Standard</th><th>Premium</th><th>Digital</th></tr></thead><tbody>' + matrixRows + '</tbody></table></div><div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Capacity / Commercial Rule</th><th>Details</th></tr></thead><tbody>' + capacityRows + '</tbody></table></div><div class="license-features-legend"><strong>Legend:</strong><ul><li class="license-features-legend-item">' + renderStatusToken('included') + ' Included</li><li class="license-features-legend-item">' + renderStatusToken('optional_addon') + ' Optional Add-on</li><li class="license-features-legend-item">' + renderStatusToken('not_included') + ' Not Included</li></ul></div></div></section>';
 }
 
 function setLicenseFeaturesPage(tab) { activeLicenseFeaturePage = tab; renderLicenseFeaturesWorkspace(); }
