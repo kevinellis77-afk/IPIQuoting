@@ -3341,11 +3341,10 @@ const teamsIntegrationFeatures = [
 ];
 
 const pciLicences = [
-  { id: 'core', name: 'Cloud PCI (Core Platform)', icon: '🛡️', badge: 'Core Platform', description: 'Core IPI payment suite enabling secure payments across contact centre channels.', keyFeatures: ['Secure PCI payment orchestration', 'Shared foundation for all PCI licences', 'Supports voice and digital payment modules'] },
-  { id: 'pauseable', name: 'Pauseable', icon: '⏸️', badge: 'Compliance Layer', description: 'Automatic pause and resume of call and screen recording using application triggers.', keyFeatures: ['Automated recording pause/resume', 'Trigger-based activation', 'Works with call and screen recording', 'Supports PCI compliance without agent intervention'] },
-  { id: 'standard', name: 'Standard', icon: '📞', badge: 'Voice Payments', description: 'Voice-led secure payment licence for agent-assisted transactions.', keyFeatures: ['Agent Pay (DTMF masking)', 'Automatic Speech Recognition (ASR) payments', '2 x monitored SIP channels per agent', 'Voice-based secure payment capture'] },
-  { id: 'premium', name: 'Premium', icon: '🌐', badge: 'Most Complete', description: 'Full omnichannel secure payment licence.', keyFeatures: ['Includes all Standard features', 'Pay by Link (digital payments)', 'Omnichannel payment support (SMS, email, chat, WhatsApp)', '2 x monitored SIP channels per agent'] },
-  { id: 'digital', name: 'Digital', icon: '💬', badge: 'Digital Only', description: 'Digital-only secure payment licence.', keyFeatures: ['Pay by Link only', 'Omnichannel payment support', 'No voice payment capability', 'Designed for chat, messaging and API-led payments'] }
+    { id: 'pauseable', name: 'Pauseable', icon: '⏸️', badge: 'Compliance Layer', description: 'Automatic pause and resume of call and screen recording using application triggers.', keyFeatures: ['Automated recording pause/resume', 'Trigger-based activation', 'Works with call and screen recording', 'Supports PCI compliance without agent intervention'] },
+  { id: 'standard', name: 'PCI Cloud - Standard', icon: '📞', badge: 'Voice Payments', description: 'Voice-led secure payment licence for agent-assisted transactions.', keyFeatures: ['Agent Pay (DTMF masking)', 'Automatic Speech Recognition (ASR) payments', '2 x monitored SIP channels per agent', 'Voice-based secure payment capture'] },
+  { id: 'premium', name: 'PCI Cloud - Premium', icon: '🌐', badge: 'Most Complete', description: 'Full omnichannel secure payment licence.', keyFeatures: ['Includes all Standard features', 'Pay by Link (digital payments)', 'Omnichannel payment support (SMS, email, chat, WhatsApp)', '2 x monitored SIP channels per agent'] },
+  { id: 'digital', name: 'PCI Cloud - Digital', icon: '💬', badge: 'Digital Only', description: 'Digital-only secure payment licence.', keyFeatures: ['Pay by Link only', 'Omnichannel payment support', 'No voice payment capability', 'Designed for chat, messaging and API-led payments'] }
 ];
 const pciModules = [
   { name: 'Agent Pay', icon: '🛡️', capabilities: ['DTMF masking', 'Secure keypad entry under agent guidance', 'Prevents card data exposure'] },
@@ -8126,12 +8125,11 @@ function renderEcxLicenseFeaturesView() {
 function renderPciLicenseFeaturesView() {
   // Intentionally curated PCI License View composition (fixed business order and filtered card set).
   var pciLicenseViewOrder = {
-    'Cloud PCI (Core Platform)': 1,
-    'Standard': 2,
-    'Digital': 3,
-    'Premium': 4,
-    'IVR Assist': 5,
-    'Pauseable': 6
+    'PCI Cloud - Standard': 1,
+    'PCI Cloud - Digital': 2,
+    'PCI Cloud - Premium': 3,
+    'IVR Assist': 4,
+    'Pauseable': 5
   };
   var curatedLicenseCards = pciLicences.filter(function(opt) {
     return Object.prototype.hasOwnProperty.call(pciLicenseViewOrder, opt.name);
