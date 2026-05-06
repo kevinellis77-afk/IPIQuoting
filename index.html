@@ -8627,77 +8627,56 @@ function renderPartnerTieringTargetExamples(programme, profile) {
   '</section>';
 }
 
-function downloadPartnerTieringSummaryPdf() {
-  if (!PARTNER_TIERING_PROGRAMME[activePartnerTieringPage]) activePartnerTieringPage = 'reseller';
-  var programme = PARTNER_TIERING_PROGRAMME[activePartnerTieringPage];
-  var profile = getSelectedQuoteProfile();
-  var generatedOn = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
-  var programmeLabel = programme && programme.label ? programme.label : 'Partner Tiering';
-  var rows = ((programme && programme.tiers) || []).map(function(tier) {
-    var profileKey = getProgrammeProfileKey(activePartnerTieringPage, tier.level);
-    var isActive = profileKey && profile.type === profileKey.model && profile.tier === profileKey.tier;
-    return '<tr' + (isActive ? ' class="active-tier"' : '') + '>' +
-      '<th scope="row">' + escapeHtml(tier.level) + (isActive ? ' <span>Current profile</span>' : '') + '</th>' +
-      '<td>' + escapeHtml(formatPartnerTieringMarginCommission(activePartnerTieringPage, tier)) + '</td>' +
-      '<td>' + escapeHtml(tier.revenueTargetLabel || '—') + '</td>' +
-      '<td>' + renderPartnerTieringCommitments(tier) + '</td>' +
-      '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
-    '</tr>';
-  }).join('');
+function renderPartnerTieringPdfSummaryHtml(profile, generatedOn) {
+  var programmeOrder = ['reseller', 'msp', 'referralConsultant'];
+  var sections = programmeOrder.map(function(programmeKey) {
+    var programme = PARTNER_TIERING_PROGRAMME[programmeKey];
+    if (!programme || !Array.isArray(programme.tiers) || !programme.tiers.length) return '';
 
-  if (!rows) {
-    showToast('No partner tiering rows are available to export.');
-    return;
-  }
-
-  var targetSection = '';
-  var context = getPartnerTieringTargetExampleContext(programme, profile);
-  if (context) {
-    var tierMarginPercent = getPartnerTieringTargetMargin(activePartnerTieringPage, context.tier);
-    var examples = getPartnerTieringExampleProducts();
-    var targetRows = examples.map(function(example) {
-      var product = example.product;
-      var normalized = getNormalizedProduct(product);
-      var monthlyListRrp = Number(product.list || 0);
-      var calculation = calculatePartnerTieringTargetExample(context.minimumRevenueTarget, monthlyListRrp, tierMarginPercent);
-      if (!calculation) return '';
-      return '<tr>' +
-        '<th scope="row">' + escapeHtml(example.label) + '<small>' + escapeHtml(normalized.licenseType || 'N/A') + ' · ' + escapeHtml(normalized.billingLabel || 'N/A') + '</small></th>' +
-        '<td class="num">' + fmtGBP(monthlyListRrp) + '</td>' +
-        '<td class="num">' + escapeHtml(formatPartnerTieringPercent(tierMarginPercent)) + '</td>' +
-        '<td class="num">' + fmtGBP(calculation.partnerBuyPrice) + '</td>' +
-        '<td class="num">' + fmtGBP(calculation.annualIpiRevenuePerLicence) + '</td>' +
-        '<td class="num">' + calculation.requiredLicences.toLocaleString('en-GB') + '</td>' +
+    var rows = programme.tiers.map(function(tier) {
+      var profileKey = getProgrammeProfileKey(programmeKey, tier.level);
+      var isActive = profileKey && profile && profile.type === profileKey.model && profile.tier === profileKey.tier;
+      return '<tr' + (isActive ? ' class="active-tier"' : '') + '>' +
+        '<th scope="row">' + escapeHtml(tier.level) + (isActive ? ' <span>Current profile</span>' : '') + '</th>' +
+        '<td class="percentage-cell">' + escapeHtml(formatPartnerTieringMarginCommission(programmeKey, tier)) + '</td>' +
+        '<td>' + escapeHtml(tier.revenueTargetLabel || '—') + '</td>' +
+        '<td>' + renderPartnerTieringCommitments(tier) + '</td>' +
+        '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
       '</tr>';
     }).join('');
-    targetSection = '<section class="section"><h2>' + escapeHtml(context.heading) + '</h2>' +
-      (context.hasCalculableTarget && targetRows
-        ? '<p><strong>' + escapeHtml(context.targetLabel) + '</strong> using representative product List RRP and Partner Buy Price values.</p><table><thead><tr><th>Product</th><th>List RRP / month</th><th>Partner margin</th><th>Partner Buy Price / month</th><th>Annual IPI revenue / licence</th><th>Licences required</th></tr></thead><tbody>' + targetRows + '</tbody></table>'
-        : '<p>The active tier does not have a numeric minimum revenue target, so no licence count is calculated.</p>') +
-      '</section>';
-  }
 
-  var htmlContent = `<!DOCTYPE html><html><head><meta charset='UTF-8'><title>IPI Partner Tiering Summary</title>
+    return '<section class="section section--' + escapeHtml(programme.theme || 'green') + '">' +
+      '<h2>' + escapeHtml(programme.label) + '</h2>' +
+      '<p>' + escapeHtml(programme.description || '') + '</p>' +
+      '<table class="programme-summary-table"><thead><tr><th>Level</th><th>Margin / Commission</th><th>Minimum Annual Revenue</th><th>Commitments</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</section>';
+  }).join('');
+
+  return `<!DOCTYPE html><html><head><meta charset='UTF-8'><title>IPI Partner Tiering Summary</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     html,body,.doc-header,.meta-grid,.section,.section h2,th,.meta-cell,.active-tier th,.active-tier td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#263238;background:white;padding:24px 28px;line-height:1.45}
-    .doc-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:3px solid #263337;padding:10px 10px 12px;margin-bottom:14px;background:#f5f8fa;border-radius:8px}
+    body{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;color:#263238;background:white;padding:22px 26px;line-height:1.35}
+    .doc-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:3px solid #263337;padding:10px 10px 12px;margin-bottom:12px;background:#f5f8fa;border-radius:8px}
     .doc-logo{display:flex;align-items:center;gap:10px}.doc-logo-mark{width:34px;height:34px;background:linear-gradient(135deg,#63AB8F,#A37992);border-radius:8px;color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}.doc-logo-name{font-size:16px;font-weight:700}.doc-logo-sub{font-size:10px;color:#63AB8F;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
     .doc-title{text-align:right}.doc-title h1{font-size:19px}.doc-title p{font-size:10px;color:#7a8f9a;margin-top:2px}
-    .meta-grid{display:grid;grid-template-columns:1.35fr 1.35fr .8fr;gap:1px;background:#dde4e8;border:1px solid #dde4e8;border-radius:6px;overflow:hidden;margin-bottom:16px}.meta-cell{background:#fff;padding:8px 10px}.meta-label{font-size:8px;text-transform:uppercase;letter-spacing:.6px;color:#7a8f9a;margin-bottom:2px;font-weight:700}.meta-value{font-size:11px;font-weight:700}
-    .section{margin-bottom:16px;page-break-inside:avoid;break-inside:avoid}.section h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;background:#36454F;border:1px solid #263337;padding:7px 10px;border-radius:6px;color:#fff;page-break-after:avoid;break-after:avoid}.section p{margin:8px 0;color:#465963}
-    table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:8px}th,td{padding:6px 8px;border-bottom:1px solid #eef3f6;vertical-align:top;text-align:left}th{font-size:8.5px;text-transform:uppercase;letter-spacing:.4px;background:#263337;color:#edf3f6;font-weight:600}td{font-size:10.5px}.active-tier th,.active-tier td{background:#f0faf5;border-bottom-color:#b7dccc}.active-tier span{display:inline-block;margin-left:5px;color:#1f7a57;font-size:8px;font-weight:700}.num{text-align:right;white-space:nowrap}ul{margin:0;padding-left:14px}li+li{margin-top:2px}.partner-tiering-list-intro{display:block;color:#1f7a57;font-weight:700;margin-bottom:3px}.partner-programme-benefits{margin:0;padding-left:14px}small{display:block;color:#7a8f9a;font-size:9px;font-weight:600;margin-top:2px;text-transform:none;letter-spacing:0}
-    .assumptions{background:#f0faf5;border-left:4px solid #63AB8F;border-radius:6px;color:#263238;margin-top:10px;padding:8px 10px}.footer{margin-top:10px;border-top:1px solid #dde4e8;padding-top:8px;font-size:9px;color:#8c9aa3}
+    .meta-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:1px;background:#dde4e8;border:1px solid #dde4e8;border-radius:6px;overflow:hidden;margin-bottom:12px}.meta-cell{background:#fff;padding:7px 10px}.meta-label{font-size:8px;text-transform:uppercase;letter-spacing:.6px;color:#7a8f9a;margin-bottom:2px;font-weight:700}.meta-value{font-size:11px;font-weight:700}
+    .section{margin-bottom:12px;page-break-inside:avoid;break-inside:avoid}.section h2{font-size:11px;text-transform:uppercase;letter-spacing:.5px;background:#36454F;border:1px solid #263337;padding:6px 9px;border-radius:6px;color:#fff;page-break-after:avoid;break-after:avoid}.section--green h2{background:#2f7f64}.section--teal h2{background:#257883}.section--mauve h2{background:#8a627c}.section p{margin:6px 0;color:#465963}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:6px}th,td{padding:5px 6px;border-bottom:1px solid #eef3f6;vertical-align:top;text-align:left}th{font-size:8px;text-transform:uppercase;letter-spacing:.35px;background:#263337;color:#edf3f6;font-weight:600}td{font-size:9.5px}.programme-summary-table th:nth-child(1){width:14%}.programme-summary-table th:nth-child(2){width:12%}.programme-summary-table th:nth-child(3){width:16%}.programme-summary-table th:nth-child(4){width:30%}.programme-summary-table th:nth-child(5){width:28%}.active-tier th,.active-tier td{background:#f0faf5;border-bottom-color:#b7dccc}.active-tier span{display:inline-block;margin-left:5px;color:#1f7a57;font-size:8px;font-weight:700}.percentage-cell{font-weight:700;white-space:nowrap}ul{margin:0;padding-left:12px}li{margin:0}li+li{margin-top:1px}.partner-tiering-list-intro{display:block;color:#1f7a57;font-weight:700;margin-bottom:2px}.partner-programme-benefits,.partner-tiering-list{margin:0;padding-left:12px}.footer{margin-top:10px;border-top:1px solid #dde4e8;padding-top:8px;font-size:9px;color:#8c9aa3}
     @media print{@page{size:A4 landscape;margin:10mm}body{padding:0}.section,table{page-break-inside:avoid;break-inside:avoid}thead{display:table-header-group}tr,td,th{page-break-inside:avoid;break-inside:avoid}}
   </style></head><body>
     <div class="doc-header"><div class="doc-logo"><div class="doc-logo-mark">IPI</div><div><div class="doc-logo-name">IP Integration</div><div class="doc-logo-sub">Partner Programme Summary</div></div></div><div class="doc-title"><h1>Partner Tiering Summary</h1><p>Confidential &mdash; For Partner Use Only</p></div></div>
-    <div class="meta-grid"><div class="meta-cell"><div class="meta-label">Programme</div><div class="meta-value">${escapeHtml(programmeLabel)}</div></div><div class="meta-cell"><div class="meta-label">Current context</div><div class="meta-value">${escapeHtml(formatPartnerTieringContext(profile))}</div></div><div class="meta-cell"><div class="meta-label">Generated</div><div class="meta-value">${generatedOn}</div></div></div>
-    <section class="section"><h2>${escapeHtml(programmeLabel)}</h2><p>${escapeHtml(programme.description || '')}</p><table><thead><tr><th>Level</th><th>Margin / Commission</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>${rows}</tbody></table><div class="assumptions"><strong>Programme caveat:</strong> Transactional, non-committed revenues and Professional Services are subject to a percentage cap on margin.</div></section>
-    ${targetSection}
-    <div class="footer">This summary was generated by the IPI Quoting Tool. Programme eligibility, margins, commitments, and examples are indicative and subject to formal agreement and IPI approval.</div>
+    <div class="meta-grid"><div class="meta-cell"><div class="meta-label">Current context</div><div class="meta-value">${escapeHtml(formatPartnerTieringContext(profile))}</div></div><div class="meta-cell"><div class="meta-label">Generated</div><div class="meta-value">${escapeHtml(generatedOn)}</div></div></div>
+    ${sections}
+    <div class="footer">Revenue targets are based on Partner Buy Price / partner spend with IPI, not customer-facing RRP. This summary was generated by the IPI Quoting Tool. Programme eligibility, margins, commitments, and examples are indicative and subject to formal agreement and IPI approval.</div>
     <script>window.addEventListener('load',function(){window.print();});<\/script>
   </body></html>`;
+}
+
+function downloadPartnerTieringSummaryPdf() {
+  var profile = getSelectedQuoteProfile();
+  var generatedOn = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  var htmlContent = renderPartnerTieringPdfSummaryHtml(profile, generatedOn);
 
   var blob = new Blob([htmlContent], { type: 'text/html' });
   var url = URL.createObjectURL(blob);
