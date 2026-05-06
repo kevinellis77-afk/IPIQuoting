@@ -2779,6 +2779,7 @@
     margin: 0;
     text-align: right;
   }
+  .partner-tiering-caveats,
   .partner-tiering-assumptions {
     background: var(--green-pale);
     border-left: 4px solid var(--green);
@@ -2789,6 +2790,7 @@
     margin: 12px 0 0;
     padding: 10px 12px;
   }
+  .partner-tiering-caveats ul,
   .partner-tiering-assumptions ul {
     margin: 6px 0 0;
     padding-left: 18px;
@@ -8563,6 +8565,12 @@ function getPartnerTieringTargetExampleContext(programme, profile) {
   return { tier: activeTier, targetRevenue: targetRevenue, targetLabel: targetLabel };
 }
 
+function renderPartnerTieringProgrammeCaveats() {
+  return '<div class="partner-tiering-caveats"><strong>Programme caveats:</strong><ul>' +
+    '<li>Transactional, non-committed revenues and Professional Services are subject to a percentage cap on margin.</li>' +
+  '</ul></div>';
+}
+
 function renderPartnerTieringTargetExamples(programme, profile) {
   var context = getPartnerTieringTargetExampleContext(programme, profile);
   if (!context) return '';
@@ -8588,7 +8596,7 @@ function renderPartnerTieringTargetExamples(programme, profile) {
     '<h2 class="license-features-section-title">Target Examples · ' + escapeHtml(context.tier.level) + '</h2>' +
     '<p><strong>' + escapeHtml(context.targetLabel) + '</strong> using representative product list prices. Select a target to recalculate the example licence counts.</p>' +
     renderPartnerTieringTargetControls() +
-    '<div class="partner-tiering-assumptions"><strong>Assumptions:</strong><ul><li>Based on List RRP</li><li>Monthly recurring licence price annualised over 12 months</li><li>Excludes one-off services, usage, and professional services unless explicitly selected later</li></ul></div>' +
+    '<div class="partner-tiering-assumptions"><strong>Target example assumptions:</strong><ul><li>Example counts are illustrative only.</li><li>Counts use annualised recurring licence revenue.</li><li>Final qualification depends on contracted revenue, customer mix, and IPI approval.</li></ul></div>' +
     '<div class="partner-tiering-examples-grid">' + cards + '</div>' +
   '</section>';
 }
@@ -8628,7 +8636,8 @@ function renderPartnerTieringWorkspace() {
   root.innerHTML = '<div class="license-page-tabs" role="tablist" aria-label="Partner tiering programmes">' + tabs + '</div>' +
     '<section class="partner-tiering-summary-card"><h2 class="license-features-section-title">Partner Tiering Overview</h2><p>Use this workspace to compare partner programme eligibility, indicative margins, commitments, and benefits. These tiering values are informational only; the current global partner profile and quote/price-list discounts remain sourced from the commercial pricing matrix.</p><div class="partner-tiering-note"><strong>Note:</strong> Select a programme tab to view one active programme group at a time.</div></section>' +
     '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '"><h2 class="license-features-section-title">' + escapeHtml(programme.label) + '</h2><p>' + escapeHtml(programme.description || '') + '</p>' +
-    '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-table"><thead><tr><th>Level</th><th>Margin / Commission</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>' +
+    '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-table"><thead><tr><th>Level</th><th>Margin / Commission</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    renderPartnerTieringProgrammeCaveats() + '</section>' +
     renderPartnerTieringTargetExamples(programme, activeProfile);
 }
 
