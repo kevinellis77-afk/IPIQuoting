@@ -2734,59 +2734,43 @@
     width: 24%;
   }
 
-  .partner-tiering-examples-grid {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    margin-top: 14px;
+  .partner-tiering-examples-table {
+    min-width: 980px;
   }
-  .partner-tiering-example-card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-    padding: 14px;
+  .partner-tiering-examples-table th,
+  .partner-tiering-examples-table td {
+    vertical-align: middle;
   }
-  .partner-tiering-example-card h3 {
+  .partner-tiering-examples-table .num {
+    font-family: "DM Mono", monospace;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .partner-tiering-example-product {
     color: var(--charcoal-dark);
-    font-size: 15px;
-    line-height: 1.3;
-    margin: 0 0 8px;
+    font-weight: 800;
   }
   .partner-tiering-example-meta {
     color: var(--text-muted);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
     font-size: 11px;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-top: 3px;
   }
-  .partner-tiering-example-metrics {
-    display: grid;
-    gap: 7px;
-    margin: 0;
-  }
-  .partner-tiering-example-metrics div {
-    align-items: baseline;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .partner-tiering-example-metrics dt {
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
-  .partner-tiering-example-metrics dd {
+  .partner-tiering-no-target {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
     color: var(--charcoal-dark);
-    font-family: "DM Mono", monospace;
-    font-size: 13px;
-    font-weight: 700;
+    margin-top: 12px;
+    padding: 14px;
+  }
+  .partner-tiering-no-target h3 {
+    font-size: 15px;
+    margin: 0 0 6px;
+  }
+  .partner-tiering-no-target p {
     margin: 0;
-    text-align: right;
   }
   .partner-tiering-caveats,
   .partner-tiering-assumptions {
@@ -4776,6 +4760,7 @@ const PARTNER_TIERING_PROGRAMME = {
       {
         level: 'Accredited',
         marginLabel: '20% partner margin',
+        marginPercent: 0.20,
         revenueTarget: 'Entry tier / first qualifying opportunities',
         commitment: 'Complete onboarding, maintain sales engagement, and register opportunities with IPI.',
         benefits: ['Access to partner price list', 'Sales enablement and bid support', 'IPI delivery and technical escalation support'],
@@ -4785,6 +4770,7 @@ const PARTNER_TIERING_PROGRAMME = {
       {
         level: 'Silver',
         marginLabel: '30% partner margin',
+        marginPercent: 0.30,
         revenueTarget: '£50k+ annual recurring revenue',
         commitment: 'Build an active pipeline, complete product enablement, and run regular account reviews.',
         benefits: ['Enhanced partner margin', 'Priority deal support', 'Co-marketing planning for approved campaigns'],
@@ -4794,6 +4780,7 @@ const PARTNER_TIERING_PROGRAMME = {
       {
         level: 'Gold',
         marginLabel: '35% partner margin',
+        marginPercent: 0.35,
         revenueTarget: '£150k+ annual recurring revenue',
         commitment: 'Maintain a qualified forecast, named commercial owner, and demonstrable customer success cadence.',
         benefits: ['Gold margin level', 'Joint account planning', 'Executive sponsor access for strategic opportunities'],
@@ -4803,6 +4790,7 @@ const PARTNER_TIERING_PROGRAMME = {
       {
         level: 'Platinum',
         marginLabel: '40% partner margin',
+        marginPercent: 0.40,
         revenueTarget: '£300k+ annual recurring revenue',
         commitment: 'Strategic growth plan, executive reviews, and agreed annual revenue objectives.',
         benefits: ['Highest reseller margin', 'Strategic roadmap briefings', 'Priority commercial and solution-design support'],
@@ -4818,6 +4806,7 @@ const PARTNER_TIERING_PROGRAMME = {
       {
         level: 'Silver',
         marginLabel: '35% partner margin',
+        marginPercent: 0.35,
         revenueTarget: '£50k+ annual recurring revenue',
         commitment: 'Provide first-line customer management, operational ownership, and recurring service reporting.',
         benefits: ['MSP price-list access', 'Operational enablement', 'Service-design support for managed propositions'],
@@ -4827,6 +4816,7 @@ const PARTNER_TIERING_PROGRAMME = {
       {
         level: 'Gold',
         marginLabel: '45% partner margin',
+        marginPercent: 0.45,
         revenueTarget: '£150k+ annual recurring revenue',
         commitment: 'Maintain a managed-service roadmap, forecast governance, and regular service reviews.',
         benefits: ['Enhanced MSP margin', 'Priority operations engagement', 'Joint proposition development'],
@@ -4836,6 +4826,7 @@ const PARTNER_TIERING_PROGRAMME = {
       {
         level: 'Platinum',
         marginLabel: '55% partner margin',
+        marginPercent: 0.55,
         revenueTarget: '£300k+ annual recurring revenue',
         commitment: 'Strategic MSP plan, executive governance, and agreed growth targets across the managed base.',
         benefits: ['Highest MSP margin', 'Priority escalation path', 'Strategic roadmap and proposition alignment'],
@@ -8551,11 +8542,24 @@ function renderPartnerTieringTargetControls() {
   '</div>';
 }
 
-function calculateRequiredLicencesForAnnualTarget(targetRevenue, monthlyPrice) {
+function calculatePartnerTieringTargetExample(targetRevenue, monthlyListRrp, tierMarginPercent) {
   var target = Number(targetRevenue || 0);
-  var price = Number(monthlyPrice || 0);
-  if (target <= 0 || price <= 0) return 0;
-  return Math.ceil(target / (price * 12));
+  var listRrp = Number(monthlyListRrp || 0);
+  var margin = Number(tierMarginPercent || 0);
+  if (target <= 0 || listRrp <= 0 || margin < 0 || margin >= 1) {
+    return {
+      partnerBuyPrice: 0,
+      annualPartnerRevenuePerLicence: 0,
+      requiredLicences: 0
+    };
+  }
+  var partnerBuyPrice = listRrp * (1 - margin);
+  var annualPartnerRevenuePerLicence = partnerBuyPrice * 12;
+  return {
+    partnerBuyPrice: partnerBuyPrice,
+    annualPartnerRevenuePerLicence: annualPartnerRevenuePerLicence,
+    requiredLicences: Math.ceil(target / annualPartnerRevenuePerLicence)
+  };
 }
 
 function getPartnerTieringExampleProducts() {
@@ -8616,30 +8620,36 @@ function renderPartnerTieringProgrammeCaveats() {
 function renderPartnerTieringTargetExamples(programme, profile) {
   var context = getPartnerTieringTargetExampleContext(programme, profile);
   if (!context) return '';
+  var tierMarginPercent = Number(context.tier.marginPercent);
+  var hasRevenueTarget = Number.isFinite(tierMarginPercent);
+  if (!hasRevenueTarget) {
+    return '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '">' +
+      '<h2 class="license-features-section-title">Target Examples · ' + escapeHtml(context.tier.level) + '</h2>' +
+      '<div class="partner-tiering-no-target"><h3>No revenue target</h3><p>Referral / Consultant tiers are commission-led introductions with no supplied partner revenue target. Referral commission is handled separately and does not create Partner Buy Price revenue unless the business decides referral-influenced revenue counts toward targets.</p></div>' +
+    '</section>';
+  }
   var examples = getPartnerTieringExampleProducts();
-  var cards = examples.map(function(example) {
+  var rows = examples.map(function(example) {
     var product = example.product;
     var normalized = getNormalizedProduct(product);
-    var monthlyPrice = Number(product.list || 0);
-    var annualRevenue = monthlyPrice * 12;
-    var requiredLicences = calculateRequiredLicencesForAnnualTarget(context.targetRevenue, monthlyPrice);
-    return '<article class="partner-tiering-example-card">' +
-      '<h3>' + escapeHtml(example.label) + '</h3>' +
-      '<div class="partner-tiering-example-meta"><span>' + escapeHtml(normalized.licenseType || 'N/A') + '</span><span>' + escapeHtml(normalized.billingLabel || 'N/A') + '</span></div>' +
-      '<dl class="partner-tiering-example-metrics">' +
-        '<div><dt>Monthly List RRP</dt><dd>' + fmtGBP(monthlyPrice) + '</dd></div>' +
-        '<div><dt>Annual revenue / licence</dt><dd>' + fmtGBP(annualRevenue) + '</dd></div>' +
-        '<div><dt>Required licences</dt><dd>' + requiredLicences.toLocaleString('en-GB') + '</dd></div>' +
-      '</dl>' +
-    '</article>';
+    var monthlyListRrp = Number(product.list || 0);
+    var calculation = calculatePartnerTieringTargetExample(context.targetRevenue, monthlyListRrp, tierMarginPercent);
+    return '<tr>' +
+      '<th scope="row"><div class="partner-tiering-example-product">' + escapeHtml(example.label) + '</div><div class="partner-tiering-example-meta">' + escapeHtml(normalized.licenseType || 'N/A') + ' · ' + escapeHtml(normalized.billingLabel || 'N/A') + '</div></th>' +
+      '<td class="num">' + fmtGBP(monthlyListRrp) + '</td>' +
+      '<td class="num">' + Math.round(tierMarginPercent * 100) + '%</td>' +
+      '<td class="num">' + fmtGBP(calculation.partnerBuyPrice) + '</td>' +
+      '<td class="num">' + fmtGBP(calculation.annualPartnerRevenuePerLicence) + '</td>' +
+      '<td class="num">' + calculation.requiredLicences.toLocaleString('en-GB') + '</td>' +
+    '</tr>';
   }).join('');
-  if (!cards) return '';
+  if (!rows) return '';
   return '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '">' +
     '<h2 class="license-features-section-title">Target Examples · ' + escapeHtml(context.tier.level) + '</h2>' +
-    '<p><strong>' + escapeHtml(context.targetLabel) + '</strong> using representative product list prices. Select a target to recalculate the example licence counts.</p>' +
+    '<p><strong>' + escapeHtml(context.targetLabel) + '</strong> using representative product List RRP and Partner Buy Price values. Select a target to recalculate the example licence counts.</p>' +
     renderPartnerTieringTargetControls() +
-    '<div class="partner-tiering-assumptions"><strong>Target example assumptions:</strong><ul><li>Example counts are illustrative only.</li><li>Counts use annualised recurring licence revenue.</li><li>Final qualification depends on contracted revenue, customer mix, and IPI approval.</li></ul></div>' +
-    '<div class="partner-tiering-examples-grid">' + cards + '</div>' +
+    '<div class="partner-tiering-assumptions"><strong>Target example assumptions:</strong><ul><li>Revenue targets are measured against Partner Buy Price / partner spend with IPI, not customer-facing RRP.</li><li>Partner Buy Price is calculated as List RRP less the active tier margin.</li><li>Example counts are illustrative only and use annualised recurring licence revenue.</li><li>Final qualification depends on contracted revenue, customer mix, and IPI approval.</li></ul></div>' +
+    '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-examples-table"><thead><tr><th>Product</th><th>List RRP / month</th><th>Partner margin</th><th>Partner Buy Price / month</th><th>Annual IPI revenue / licence</th><th>Licences required</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
   '</section>';
 }
 
