@@ -2718,13 +2718,24 @@
   .partner-tiering-table td:nth-child(5) {
     width: 24%;
   }
+  .partner-tiering-table td:has(.partner-tiering-list-intro) {
+    text-align: left;
+  }
   .partner-tiering-list-intro {
-    color: var(--text-muted);
-    display: block;
+    align-items: center;
+    background: var(--green-pale);
+    border: 1px solid rgba(99, 171, 143, 0.25);
+    border-left: 3px solid var(--green);
+    border-radius: 999px;
+    color: var(--charcoal-dark);
+    display: inline-flex;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 700;
+    justify-content: flex-start;
     line-height: 1.3;
-    margin-bottom: 3px;
+    margin: 0 0 6px 0;
+    padding: 4px 8px;
+    text-align: left;
   }
   .partner-tiering-list {
     margin: 0;
