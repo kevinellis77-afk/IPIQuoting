@@ -2251,6 +2251,9 @@
     border-radius: 22px;
     box-shadow: var(--shadow-sm);
     padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
 
@@ -2273,6 +2276,9 @@
 
   .launchpad-card.quote .launchpad-card-icon { background: var(--green-pale); }
   .launchpad-card.price .launchpad-card-icon { background: var(--mauve-pale); }
+  .launchpad-card.tiering .launchpad-card-icon {
+    background: linear-gradient(135deg, var(--green-pale) 0%, var(--mauve-pale) 100%);
+  }
 
   .launchpad-card-title {
     font-size: 22px;
@@ -2314,6 +2320,9 @@
   }
 
   .launchpad-card.price .launchpad-card-points div::before { background: var(--mauve); }
+  .launchpad-card.tiering .launchpad-card-points div::before { background: var(--green); }
+
+  .launchpad-card .btn { margin-top: auto; }
 
   .launchpad-footer-note {
     margin-top: 18px;
@@ -3033,7 +3042,7 @@
         <div class="launchpad-card-copy">Review available license options &amp; feature packs.</div>
         <button class="btn btn-primary" onclick="selectWorkspace('licenseFeatures')">Open License Options</button>
       </div>
-      <div class="launchpad-card price">
+      <div class="launchpad-card tiering">
         <div class="launchpad-card-icon">🏆</div>
         <div class="launchpad-card-title">Partner Tiering</div>
         <div class="launchpad-card-copy">Review partner models, tier discounts, and commercial posture guidance.</div>
