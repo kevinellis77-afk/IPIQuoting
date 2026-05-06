@@ -2660,6 +2660,50 @@
     text-align: left;
   }
   .partner-programme-benefits li + li { margin-top: 4px; }
+  .partner-tiering-module {
+    display: grid;
+    gap: 16px;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .partner-tiering-summary-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 18px;
+  }
+  .partner-tiering-summary-card p {
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .partner-tiering-note {
+    background: var(--green-pale);
+    border-left: 4px solid var(--green);
+    border-radius: 8px;
+    color: var(--charcoal-dark);
+    font-size: 13px;
+    line-height: 1.45;
+    margin: 14px 0 0;
+    padding: 10px 12px;
+  }
+  .partner-tiering-table {
+    min-width: 760px;
+  }
+  .partner-tiering-table th:first-child,
+  .partner-tiering-table td:first-child {
+    width: 18%;
+  }
+  .partner-tiering-table th:nth-child(2),
+  .partner-tiering-table td:nth-child(2) {
+    width: 18%;
+  }
+  .partner-tiering-table th:nth-child(5),
+  .partner-tiering-table td:nth-child(5) {
+    width: 24%;
+  }
 
   .license-cards-grid {
     display:grid;
@@ -8258,31 +8302,48 @@ function renderProgrammeBenefits(benefits) {
   }).join('') + '</ul>';
 }
 
+var activePartnerTieringPage = 'reseller';
+
+function setPartnerTieringPage(tab) {
+  if (!PARTNER_TIERING_PROGRAMME[tab]) return;
+  activePartnerTieringPage = tab;
+  renderPartnerTieringWorkspace();
+}
+
 function renderPartnerTieringWorkspace() {
   var root = document.getElementById('partnerTieringModuleRoot');
   if (!root) return;
+  if (!PARTNER_TIERING_PROGRAMME[activePartnerTieringPage]) activePartnerTieringPage = 'reseller';
+
   var activeProfile = getCommercialProfile();
-  var sections = Object.keys(PARTNER_TIERING_PROGRAMME).map(function(programmeKey) {
-    var programme = PARTNER_TIERING_PROGRAMME[programmeKey];
-    var rows = (programme.tiers || []).map(function(tier) {
-      var profileKey = getProgrammeProfileKey(programmeKey, tier.level);
-      var isActive = profileKey && activeProfile.type === profileKey.model && activeProfile.tier === profileKey.tier;
-      var bandParts = [];
-      if (typeof tier.targetBandMin === 'number') bandParts.push('Min £' + tier.targetBandMin.toLocaleString('en-GB'));
-      if (typeof tier.targetBandMax === 'number') bandParts.push('Max £' + tier.targetBandMax.toLocaleString('en-GB'));
-      return '<tr>' +
-        '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.level) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
-        '<td>' + escapeHtml(tier.marginLabel || tier.commissionLabel || '—') + '</td>' +
-        '<td>' + escapeHtml(tier.revenueTarget || '—') + (bandParts.length ? '<div class="partner-programme-band">' + escapeHtml(bandParts.join(' · ')) + '</div>' : '') + '</td>' +
-        '<td>' + escapeHtml(tier.commitment || '—') + '</td>' +
-        '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
-      '</tr>';
-    }).join('');
-    return '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '"><h2 class="license-features-section-title">' + escapeHtml(programme.label) + '</h2><p>' + escapeHtml(programme.description || '') + '</p>' +
-      '<div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Tier</th><th>Margin / Commission</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+  var programmeKeys = Object.keys(PARTNER_TIERING_PROGRAMME);
+  var programme = PARTNER_TIERING_PROGRAMME[activePartnerTieringPage];
+  var tabs = programmeKeys.map(function(programmeKey) {
+    var tabProgramme = PARTNER_TIERING_PROGRAMME[programmeKey];
+    var isActive = programmeKey === activePartnerTieringPage;
+    return '<button class="license-page-tab ' + (isActive ? 'active' : '') + '" type="button" onclick="setPartnerTieringPage(&quot;' + escapeHtml(programmeKey) + '&quot;)" aria-pressed="' + (isActive ? 'true' : 'false') + '">' + escapeHtml(tabProgramme.label) + '</button>';
   }).join('');
-  root.className = 'license-features-module';
-  root.innerHTML = '<section class="license-features-section"><h2 class="license-features-section-title">Partner Tiering Overview</h2><p>Use this workspace to compare partner programme eligibility, indicative margins, commitments, and benefits. These tiering values are informational only; the current global partner profile and quote/price-list discounts remain sourced from the commercial pricing matrix.</p></section>' + sections;
+
+  var rows = (programme.tiers || []).map(function(tier) {
+    var profileKey = getProgrammeProfileKey(activePartnerTieringPage, tier.level);
+    var isActive = profileKey && activeProfile.type === profileKey.model && activeProfile.tier === profileKey.tier;
+    var bandParts = [];
+    if (typeof tier.targetBandMin === 'number') bandParts.push('Min £' + tier.targetBandMin.toLocaleString('en-GB'));
+    if (typeof tier.targetBandMax === 'number') bandParts.push('Max £' + tier.targetBandMax.toLocaleString('en-GB'));
+    return '<tr>' +
+      '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.level) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
+      '<td>' + escapeHtml(tier.marginLabel || tier.commissionLabel || '—') + '</td>' +
+      '<td>' + escapeHtml(tier.revenueTarget || '—') + (bandParts.length ? '<div class="partner-programme-band">' + escapeHtml(bandParts.join(' · ')) + '</div>' : '') + '</td>' +
+      '<td>' + escapeHtml(tier.commitment || '—') + '</td>' +
+      '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  root.className = 'partner-tiering-module';
+  root.innerHTML = '<div class="license-page-tabs" role="tablist" aria-label="Partner tiering programmes">' + tabs + '</div>' +
+    '<section class="partner-tiering-summary-card"><h2 class="license-features-section-title">Partner Tiering Overview</h2><p>Use this workspace to compare partner programme eligibility, indicative margins, commitments, and benefits. These tiering values are informational only; the current global partner profile and quote/price-list discounts remain sourced from the commercial pricing matrix.</p><div class="partner-tiering-note"><strong>Note:</strong> Select a programme tab to view one active programme group at a time.</div></section>' +
+    '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '"><h2 class="license-features-section-title">' + escapeHtml(programme.label) + '</h2><p>' + escapeHtml(programme.description || '') + '</p>' +
+    '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-table"><thead><tr><th>Level</th><th>Margin / Commission</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
 }
 
 function formatLicenseFeatureLabel(value) {
