@@ -2677,18 +2677,6 @@
     min-height: 0;
     overflow: visible;
   }
-  .partner-tiering-summary-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-sm);
-    padding: 18px;
-  }
-  .partner-tiering-summary-card p {
-    color: var(--text-muted);
-    margin: 0;
-    line-height: 1.5;
-  }
   .partner-tiering-context {
     color: var(--charcoal-dark);
     font-size: 12px;
@@ -2699,15 +2687,12 @@
     color: var(--text-muted);
     font-weight: 600;
   }
-  .partner-tiering-note {
-    background: var(--green-pale);
-    border-left: 4px solid var(--green);
-    border-radius: 8px;
-    color: var(--charcoal-dark);
+  .partner-tiering-title-helper {
+    color: var(--text-muted);
     font-size: 13px;
     line-height: 1.45;
-    margin: 14px 0 0;
-    padding: 10px 12px;
+    max-width: 780px;
+    margin: -4px 0 14px;
   }
   .partner-tiering-table {
     min-width: 760px;
@@ -3052,8 +3037,8 @@
   <div class="partner-tiering-shell">
     <div class="price-list-header">
       <div class="price-list-title">Partner Tiering</div>
+      <div class="partner-tiering-title-helper">Compare partner programme eligibility, indicative margins, commitments, benefits, and target licence examples. Commercial pricing remains sourced from the active pricing matrix.</div>
       <div class="price-list-header-actions">
-        <div class="price-list-profile">Uses current partner profile context to explain partner models, tiers, and discounts.</div>
         <div class="partner-tiering-context" id="partnerTieringContextNote"><span>Current context:</span> Reseller · Accredited · 20%</div>
       </div>
     </div>
@@ -8620,7 +8605,6 @@ function renderPartnerTieringWorkspace() {
 
   root.className = 'partner-tiering-module';
   root.innerHTML = '<div class="license-page-tabs" role="tablist" aria-label="Partner tiering programmes">' + tabs + '</div>' +
-    '<section class="partner-tiering-summary-card"><h2 class="license-features-section-title">Partner Tiering Overview</h2><p>Use this workspace to compare partner programme eligibility, indicative margins, commitments, and benefits. These tiering values are informational only; the current global partner profile and quote/price-list discounts remain sourced from the commercial pricing matrix.</p><div class="partner-tiering-note"><strong>Note:</strong> Select a programme tab to view one active programme group at a time.</div></section>' +
     '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '"><h2 class="license-features-section-title">' + escapeHtml(programme.label) + '</h2><p>' + escapeHtml(programme.description || '') + '</p>' +
     '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-table"><thead><tr><th>Level</th><th>Margin / Commission</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
     renderPartnerTieringProgrammeCaveats() + '</section>' +
