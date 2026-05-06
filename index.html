@@ -2794,6 +2794,39 @@
     padding-left: 18px;
   }
 
+  .partner-tiering-target-controls {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0 0;
+  }
+  .partner-tiering-target-field {
+    display: grid;
+    gap: 4px;
+    min-width: 150px;
+  }
+  .partner-tiering-target-field label {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .partner-tiering-target-field select,
+  .partner-tiering-target-field input {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--charcoal-dark);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 10px;
+  }
+  .partner-tiering-target-field input {
+    max-width: 150px;
+  }
+
   .license-cards-grid {
     display:grid;
     gap:14px;
@@ -8403,6 +8436,9 @@ function renderProgrammeBenefits(benefits) {
 }
 
 var activePartnerTieringPage = 'reseller';
+var partnerTieringTargetRevenue = 250000;
+var partnerTieringLastDefaultTargetKey = '';
+var partnerTieringTargetPresets = [50000, 100000, 250000, 500000];
 
 function getPartnerTieringProgrammeKeyForProfile(profile) {
   var resolvedProfile = profile || getSelectedQuoteProfile();
@@ -8435,6 +8471,41 @@ function setPartnerTieringPage(tab) {
   renderPartnerTieringWorkspace();
 }
 
+function setPartnerTieringTargetRevenue(value) {
+  var parsed = Math.round(Number(value || 0));
+  if (!Number.isFinite(parsed) || parsed <= 0) return;
+  partnerTieringTargetRevenue = parsed;
+  renderPartnerTieringWorkspace();
+}
+
+function getClosestPartnerTieringTargetPreset(targetRevenue) {
+  var target = Number(targetRevenue || 0);
+  if (target <= 0) return partnerTieringTargetPresets[0];
+  var higherOrEqual = partnerTieringTargetPresets.filter(function(preset) { return preset >= target; });
+  if (higherOrEqual.length) return higherOrEqual[0];
+  return partnerTieringTargetPresets[partnerTieringTargetPresets.length - 1];
+}
+
+function syncPartnerTieringTargetRevenueToTier(activeTier) {
+  if (!activeTier || typeof activeTier.targetBandMin !== 'number' || activeTier.targetBandMin <= 0) return;
+  var defaultKey = activePartnerTieringPage + ':' + activeTier.level + ':' + activeTier.targetBandMin;
+  if (partnerTieringLastDefaultTargetKey === defaultKey) return;
+  partnerTieringTargetRevenue = getClosestPartnerTieringTargetPreset(activeTier.targetBandMin);
+  partnerTieringLastDefaultTargetKey = defaultKey;
+}
+
+function renderPartnerTieringTargetControls() {
+  var isPresetValue = partnerTieringTargetPresets.indexOf(partnerTieringTargetRevenue) !== -1;
+  var options = partnerTieringTargetPresets.map(function(preset) {
+    return '<option value="' + preset + '"' + (partnerTieringTargetRevenue === preset ? ' selected' : '') + '>£' + (preset / 1000).toLocaleString('en-GB') + 'k</option>';
+  }).join('');
+  return '<div class="partner-tiering-target-controls" aria-label="Partner tiering target controls">' +
+    '<div class="partner-tiering-target-field"><label for="partnerTieringTargetRevenueSelect">Annual target</label>' +
+    '<select id="partnerTieringTargetRevenueSelect" onchange="setPartnerTieringTargetRevenue(this.value)">' + options + '<option value="' + escapeHtml(partnerTieringTargetRevenue) + '"' + (!isPresetValue ? ' selected' : '') + '>Custom</option></select></div>' +
+    '<div class="partner-tiering-target-field"><label for="partnerTieringCustomTargetRevenue">Custom £</label>' +
+    '<input id="partnerTieringCustomTargetRevenue" type="number" min="1" step="1000" value="' + escapeHtml(partnerTieringTargetRevenue) + '" onchange="setPartnerTieringTargetRevenue(this.value)" placeholder="250000"></div>' +
+  '</div>';
+}
 
 function calculateRequiredLicencesForAnnualTarget(targetRevenue, monthlyPrice) {
   var target = Number(targetRevenue || 0);
@@ -8486,7 +8557,8 @@ function getPartnerTieringTargetExampleContext(programme, profile) {
     return profileKey && profile && profile.type === profileKey.model && profile.tier === profileKey.tier;
   }) || tiers[0] || null;
   if (!activeTier) return null;
-  var targetRevenue = typeof activeTier.targetBandMin === 'number' ? activeTier.targetBandMin : 0;
+  syncPartnerTieringTargetRevenueToTier(activeTier);
+  var targetRevenue = partnerTieringTargetRevenue;
   var targetLabel = targetRevenue > 0 ? 'To reach £' + targetRevenue.toLocaleString('en-GB') : 'To reach ' + activeTier.level;
   return { tier: activeTier, targetRevenue: targetRevenue, targetLabel: targetLabel };
 }
@@ -8514,7 +8586,8 @@ function renderPartnerTieringTargetExamples(programme, profile) {
   if (!cards) return '';
   return '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '">' +
     '<h2 class="license-features-section-title">Target Examples · ' + escapeHtml(context.tier.level) + '</h2>' +
-    '<p><strong>' + escapeHtml(context.targetLabel) + '</strong> using representative product list prices. Target-band examples calculate against the lower threshold first.</p>' +
+    '<p><strong>' + escapeHtml(context.targetLabel) + '</strong> using representative product list prices. Select a target to recalculate the example licence counts.</p>' +
+    renderPartnerTieringTargetControls() +
     '<div class="partner-tiering-assumptions"><strong>Assumptions:</strong><ul><li>Based on List RRP</li><li>Monthly recurring licence price annualised over 12 months</li><li>Excludes one-off services, usage, and professional services unless explicitly selected later</li></ul></div>' +
     '<div class="partner-tiering-examples-grid">' + cards + '</div>' +
   '</section>';
