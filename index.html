@@ -3038,9 +3038,6 @@
     <div class="price-list-header">
       <div class="price-list-title">Partner Tiering</div>
       <div class="partner-tiering-title-helper">Compare partner programme eligibility, indicative margins, commitments, benefits, and target licence examples. Commercial pricing remains sourced from the active pricing matrix.</div>
-      <div class="price-list-header-actions">
-        <div class="partner-tiering-context" id="partnerTieringContextNote"><span>Current context:</span> Reseller · Accredited · 20%</div>
-      </div>
     </div>
     <div id="partnerTieringModuleRoot"></div>
   </div>
@@ -8581,8 +8578,7 @@ function renderPartnerTieringWorkspace() {
   if (!PARTNER_TIERING_PROGRAMME[activePartnerTieringPage]) activePartnerTieringPage = 'reseller';
 
   var activeProfile = getSelectedQuoteProfile();
-  var contextNote = document.getElementById('partnerTieringContextNote');
-  if (contextNote) contextNote.innerHTML = '<span>Current context:</span> ' + escapeHtml(formatPartnerTieringContext(activeProfile));
+  var currentContextNote = '<div class="partner-tiering-context" id="partnerTieringContextNote"><span>Current context:</span> ' + escapeHtml(formatPartnerTieringContext(activeProfile)) + '</div>';
   var programmeKeys = Object.keys(PARTNER_TIERING_PROGRAMME);
   var programme = PARTNER_TIERING_PROGRAMME[activePartnerTieringPage];
   var tabs = programmeKeys.map(function(programmeKey) {
@@ -8604,7 +8600,8 @@ function renderPartnerTieringWorkspace() {
   }).join('');
 
   root.className = 'partner-tiering-module';
-  root.innerHTML = '<div class="license-page-tabs" role="tablist" aria-label="Partner tiering programmes">' + tabs + '</div>' +
+  root.innerHTML = currentContextNote +
+    '<div class="license-page-tabs" role="tablist" aria-label="Partner tiering programmes">' + tabs + '</div>' +
     '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '"><h2 class="license-features-section-title">' + escapeHtml(programme.label) + '</h2><p>' + escapeHtml(programme.description || '') + '</p>' +
     '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-table"><thead><tr><th>Level</th><th>Margin / Commission</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
     renderPartnerTieringProgrammeCaveats() + '</section>' +
