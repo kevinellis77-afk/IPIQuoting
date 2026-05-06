@@ -8572,6 +8572,13 @@ function renderPartnerTieringTargetExamples(programme, profile) {
   '</section>';
 }
 
+function formatPartnerTieringMarginCommission(programmeKey, tier) {
+  if (programmeKey === 'reseller' && typeof tier.marginPercent === 'number') {
+    return Math.round(tier.marginPercent * 100) + '%';
+  }
+  return tier.marginLabel || tier.commissionLabel || '—';
+}
+
 function renderPartnerTieringWorkspace() {
   var root = document.getElementById('partnerTieringModuleRoot');
   if (!root) return;
@@ -8592,7 +8599,7 @@ function renderPartnerTieringWorkspace() {
     var isActive = profileKey && activeProfile.type === profileKey.model && activeProfile.tier === profileKey.tier;
     return '<tr' + (isActive ? ' class="partner-tiering-current-row"' : '') + '>' +
       '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.level) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
-      '<td>' + escapeHtml(tier.marginLabel || tier.commissionLabel || '—') + '</td>' +
+      '<td>' + escapeHtml(formatPartnerTieringMarginCommission(activePartnerTieringPage, tier)) + '</td>' +
       '<td>' + escapeHtml(tier.revenueTargetLabel || '—') + '</td>' +
       '<td>' + escapeHtml(tier.commitment || '—') + '</td>' +
       '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
