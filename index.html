@@ -2146,7 +2146,8 @@
   /* ─── LAUNCHPAD / PRICE LIST ─── */
   .launchpad-overlay,
   .price-list-overlay,
-  .license-features-overlay {
+  .license-features-overlay,
+  .partner-tiering-overlay {
     position: fixed;
     inset: 108px 0 0 0;
     z-index: 150;
@@ -2159,11 +2160,13 @@
 
   .launchpad-overlay.hidden,
   .price-list-overlay.hidden,
-  .license-features-overlay.hidden { display: none; }
+  .license-features-overlay.hidden,
+  .partner-tiering-overlay.hidden { display: none; }
 
   .launchpad-shell,
   .price-list-shell,
-  .license-features-shell {
+  .license-features-shell,
+  .partner-tiering-shell {
     max-width: 1280px;
     margin: 0 auto;
     padding: 28px 30px 36px;
@@ -2793,6 +2796,10 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 9.74-8 10-4.5-.26-8-5-8-10V6l8-4z"></path><path d="M9 12l2 2 4-4"></path></svg>
             License Options &amp; Features
           </button>
+          <button class="toolbar-menu-item" onclick="selectWorkspace('partnerTiering')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5"></path><path d="M8 17h10"></path><path d="M8 12h8"></path><path d="M8 7h5"></path></svg>
+            Partner Tiering
+          </button>
         </div>
       </div>
     </div>
@@ -2841,6 +2848,12 @@
         <div class="launchpad-card-copy">Review available license options &amp; feature packs.</div>
         <button class="btn btn-primary" onclick="selectWorkspace('licenseFeatures')">Open License Options</button>
       </div>
+      <div class="launchpad-card price">
+        <div class="launchpad-card-icon">🏆</div>
+        <div class="launchpad-card-title">Partner Tiering</div>
+        <div class="launchpad-card-copy">Review partner models, tier discounts, and commercial posture guidance.</div>
+        <button class="btn btn-primary" onclick="selectWorkspace('partnerTiering')">Open Partner Tiering</button>
+      </div>
       <div class="launchpad-card quote">
         <div class="launchpad-card-icon">🧾</div>
         <div class="launchpad-card-title">Quoting Tool</div>
@@ -2861,6 +2874,18 @@
       </div>
     </div>
     <div id="licenseFeaturesModuleRoot"></div>
+  </div>
+</div>
+
+<div class="partner-tiering-overlay hidden" id="partnerTieringOverlay">
+  <div class="partner-tiering-shell">
+    <div class="price-list-header">
+      <div class="price-list-title">Partner Tiering</div>
+      <div class="price-list-header-actions">
+        <div class="price-list-profile">Uses current partner profile context to explain partner models, tiers, and discounts.</div>
+      </div>
+    </div>
+    <div id="partnerTieringModuleRoot"></div>
   </div>
 </div>
 
@@ -4878,7 +4903,7 @@ function clearWorkflowSessionContext() {
 }
 
 function updateWorkflowContextBar() {
-  const workspaceMap = { launchpad: 'Launchpad', quote: 'Quoting Tool', price: 'Partner Price List', licenseFeatures: 'License Options & Features' };
+  const workspaceMap = { launchpad: 'Launchpad', quote: 'Quoting Tool', price: 'Partner Price List', licenseFeatures: 'License Options & Features', partnerTiering: 'Partner Tiering' };
   const workspaceLabel = workspaceMap[getCurrentWorkspace()] || 'Launchpad';
   const profile = getSelectedQuoteProfile();
   const ref = (document.getElementById('quoteRef')?.value || '').trim() || 'Draft (not set)';
@@ -8048,6 +8073,7 @@ function openLaunchpad() {
   document.getElementById('launchpadOverlay').classList.remove('hidden');
   document.getElementById('priceListOverlay').classList.add('hidden');
   document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
+  document.getElementById('partnerTieringOverlay').classList.add('hidden');
   updateToolbarState();
   updateWorkflowContextBar();
 }
@@ -8056,6 +8082,7 @@ function openQuoteBuilder() {
   document.getElementById('launchpadOverlay').classList.add('hidden');
   document.getElementById('priceListOverlay').classList.add('hidden');
   document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
+  document.getElementById('partnerTieringOverlay').classList.add('hidden');
   updateToolbarState();
   updateWorkflowContextBar();
 }
@@ -8064,6 +8091,7 @@ function openPriceList() {
   document.getElementById('launchpadOverlay').classList.add('hidden');
   document.getElementById('priceListOverlay').classList.remove('hidden');
   document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
+  document.getElementById('partnerTieringOverlay').classList.add('hidden');
   syncPriceListFilterOptions();
   renderPartnerPriceList();
   updateToolbarState();
@@ -8074,9 +8102,43 @@ function openLicenseFeatures() {
   document.getElementById('launchpadOverlay').classList.add('hidden');
   document.getElementById('priceListOverlay').classList.add('hidden');
   document.getElementById('licenseFeaturesOverlay').classList.remove('hidden');
+  document.getElementById('partnerTieringOverlay').classList.add('hidden');
   renderLicenseFeaturesWorkspace();
   updateToolbarState();
   updateWorkflowContextBar();
+}
+
+
+function openPartnerTiering() {
+  document.getElementById('launchpadOverlay').classList.add('hidden');
+  document.getElementById('priceListOverlay').classList.add('hidden');
+  document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
+  document.getElementById('partnerTieringOverlay').classList.remove('hidden');
+  renderPartnerTieringWorkspace();
+  updateToolbarState();
+  updateWorkflowContextBar();
+}
+
+function renderPartnerTieringWorkspace() {
+  var root = document.getElementById('partnerTieringModuleRoot');
+  if (!root) return;
+  var activeProfile = getCommercialProfile();
+  var sections = Object.keys(PARTNER_PRICE_PROFILES).map(function(modelKey) {
+    var model = PARTNER_PRICE_PROFILES[modelKey];
+    var rows = Object.keys(model.tiers || {}).map(function(tierKey) {
+      var tier = model.tiers[tierKey];
+      var isActive = activeProfile.type === modelKey && activeProfile.tier === tierKey;
+      return '<tr>' +
+        '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.label) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
+        '<td>' + escapeHtml(Math.round(tier.discount * 100) + '%') + '</td>' +
+        '<td>' + escapeHtml(getStoredProfileLabel(modelKey, tierKey)) + '</td>' +
+      '</tr>';
+    }).join('');
+    return '<section class="license-features-section"><h2 class="license-features-section-title">' + escapeHtml(model.label) + '</h2>' +
+      '<div class="license-features-table-wrap"><table class="license-features-table"><thead><tr><th>Tier</th><th>Discount</th><th>Commercial profile</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>';
+  }).join('');
+  root.className = 'license-features-module';
+  root.innerHTML = '<section class="license-features-section"><h2 class="license-features-section-title">Partner Tiering Overview</h2><p>Use this workspace to compare partner models and tier discounts. The current global partner profile remains shared with the Partner Price List and Quoting Tool.</p></section>' + sections;
 }
 
 function formatLicenseFeatureLabel(value) {
@@ -8218,9 +8280,11 @@ function getCurrentWorkspace() {
   const launchpadVisible = !document.getElementById('launchpadOverlay').classList.contains('hidden');
   const priceListVisible = !document.getElementById('priceListOverlay').classList.contains('hidden');
   const licenseFeaturesVisible = !document.getElementById('licenseFeaturesOverlay').classList.contains('hidden');
+  const partnerTieringVisible = !document.getElementById('partnerTieringOverlay').classList.contains('hidden');
   if (launchpadVisible) return 'launchpad';
   if (priceListVisible) return 'price';
   if (licenseFeaturesVisible) return 'licenseFeatures';
+  if (partnerTieringVisible) return 'partnerTiering';
   return 'quote';
 }
 
@@ -8279,6 +8343,7 @@ function selectWorkspace(view, options) {
   if (view === 'launchpad') openLaunchpad();
   else if (view === 'price') openPriceList();
   else if (view === 'licenseFeatures') openLicenseFeatures();
+  else if (view === 'partnerTiering') openPartnerTiering();
   else openQuoteBuilder();
 
   if (view === 'quote') applyQuoteFilterState(workflowSessionState.quoteFilters || getStoredJson(WORKFLOW_CONTEXT_KEYS.quoteFilters, null));
@@ -8304,7 +8369,9 @@ function updateToolbarState() {
     ? 'Quoting Tool'
     : (workspace === 'price'
       ? 'Partner Price List'
-      : (workspace === 'licenseFeatures' ? 'License Options & Features' : 'Launchpad'));
+      : (workspace === 'licenseFeatures'
+        ? 'License Options & Features'
+        : (workspace === 'partnerTiering' ? 'Partner Tiering' : 'Launchpad')));
   workspaceBtn.firstChild.textContent = workspaceLabel + ' ';
   if (workspace === 'quote') {
     actionsBtn.classList.remove('hidden');
