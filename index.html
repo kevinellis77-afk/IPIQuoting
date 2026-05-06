@@ -4718,40 +4718,37 @@ const PARTNER_TIERING_PROGRAMME = {
         level: 'Accredited',
         marginLabel: '20% partner margin',
         marginPercent: 0.20,
-        revenueTarget: 'Entry tier / first qualifying opportunities',
+        revenueTargetLabel: 'Less than £50k Annual Revenue',
+        minimumRevenueTarget: null,
         commitment: 'Complete onboarding, maintain sales engagement, and register opportunities with IPI.',
-        benefits: ['Access to partner price list', 'Sales enablement and bid support', 'IPI delivery and technical escalation support'],
-        targetBandMin: 0,
-        targetBandMax: 49999
+        benefits: ['Access to partner price list', 'Sales enablement and bid support', 'IPI delivery and technical escalation support']
       },
       {
         level: 'Silver',
         marginLabel: '30% partner margin',
         marginPercent: 0.30,
-        revenueTarget: '£50k+ annual recurring revenue',
+        revenueTargetLabel: 'Min £50k',
+        minimumRevenueTarget: 50000,
         commitment: 'Build an active pipeline, complete product enablement, and run regular account reviews.',
-        benefits: ['Enhanced partner margin', 'Priority deal support', 'Co-marketing planning for approved campaigns'],
-        targetBandMin: 50000,
-        targetBandMax: 249999
+        benefits: ['Enhanced partner margin', 'Priority deal support', 'Co-marketing planning for approved campaigns']
       },
       {
         level: 'Gold',
         marginLabel: '35% partner margin',
         marginPercent: 0.35,
-        revenueTarget: '£250k+ annual recurring revenue',
+        revenueTargetLabel: 'Min £250k',
+        minimumRevenueTarget: 250000,
         commitment: 'Maintain a qualified forecast, named commercial owner, and demonstrable customer success cadence.',
-        benefits: ['Gold margin level', 'Joint account planning', 'Executive sponsor access for strategic opportunities'],
-        targetBandMin: 250000,
-        targetBandMax: 499999
+        benefits: ['Gold margin level', 'Joint account planning', 'Executive sponsor access for strategic opportunities']
       },
       {
         level: 'Platinum',
         marginLabel: '40% partner margin',
         marginPercent: 0.40,
-        revenueTarget: '£500k+ annual recurring revenue',
+        revenueTargetLabel: 'Min £500k',
+        minimumRevenueTarget: 500000,
         commitment: 'Strategic growth plan, executive reviews, and agreed annual revenue objectives.',
-        benefits: ['Highest reseller margin', 'Strategic roadmap briefings', 'Priority commercial and solution-design support'],
-        targetBandMin: 500000
+        benefits: ['Highest reseller margin', 'Strategic roadmap briefings', 'Priority commercial and solution-design support']
       }
     ]
   },
@@ -4764,30 +4761,28 @@ const PARTNER_TIERING_PROGRAMME = {
         level: 'Silver',
         marginLabel: '35% partner margin',
         marginPercent: 0.35,
-        revenueTarget: '£100k+ annual recurring revenue',
+        revenueTargetLabel: 'Min £100k',
+        minimumRevenueTarget: 100000,
         commitment: 'Provide first-line customer management, operational ownership, and recurring service reporting.',
-        benefits: ['MSP price-list access', 'Operational enablement', 'Service-design support for managed propositions'],
-        targetBandMin: 100000,
-        targetBandMax: 249999
+        benefits: ['MSP price-list access', 'Operational enablement', 'Service-design support for managed propositions']
       },
       {
         level: 'Gold',
         marginLabel: '45% partner margin',
         marginPercent: 0.45,
-        revenueTarget: '£250k+ annual recurring revenue',
+        revenueTargetLabel: 'Min £250k',
+        minimumRevenueTarget: 250000,
         commitment: 'Maintain a managed-service roadmap, forecast governance, and regular service reviews.',
-        benefits: ['Enhanced MSP margin', 'Priority operations engagement', 'Joint proposition development'],
-        targetBandMin: 250000,
-        targetBandMax: 499999
+        benefits: ['Enhanced MSP margin', 'Priority operations engagement', 'Joint proposition development']
       },
       {
         level: 'Platinum',
         marginLabel: '55% partner margin',
         marginPercent: 0.55,
-        revenueTarget: '£500k+ annual recurring revenue',
+        revenueTargetLabel: 'Min £500k',
+        minimumRevenueTarget: 500000,
         commitment: 'Strategic MSP plan, executive governance, and agreed growth targets across the managed base.',
-        benefits: ['Highest MSP margin', 'Priority escalation path', 'Strategic roadmap and proposition alignment'],
-        targetBandMin: 500000
+        benefits: ['Highest MSP margin', 'Priority escalation path', 'Strategic roadmap and proposition alignment']
       }
     ]
   },
@@ -4797,12 +4792,20 @@ const PARTNER_TIERING_PROGRAMME = {
     description: 'For consultants and introducers that refer qualified opportunities while IPI owns contracting and delivery commercials.',
     tiers: [
       {
-        level: 'Consultant',
+        level: 'Lead Referral',
         commissionLabel: '15% referral commission',
-        revenueTarget: 'Qualified referred opportunities accepted by IPI',
+        revenueTargetLabel: 'N/A',
+        minimumRevenueTarget: null,
         commitment: 'Introduce the opportunity, support discovery, and remain engaged through qualification and handover.',
-        benefits: ['Referral commission on eligible revenue', 'IPI sales support', 'No resale billing obligation'],
-        targetBandMin: 0
+        benefits: ['Referral commission on eligible revenue', 'IPI sales support', 'No resale billing obligation']
+      },
+      {
+        level: 'Registered & Influenced Referral',
+        commissionLabel: '15% referral commission',
+        revenueTargetLabel: 'N/A',
+        minimumRevenueTarget: null,
+        commitment: 'Register and influence qualified opportunities while IPI owns contracting and delivery commercials.',
+        benefits: ['Referral commission on eligible revenue', 'IPI sales support', 'No resale billing obligation']
       }
     ]
   }
@@ -8405,7 +8408,10 @@ function openPartnerTiering(options) {
 
 function getProgrammeProfileKey(programmeKey, tierLevel) {
   var normalizedLevel = String(tierLevel || '').toLowerCase();
-  if (programmeKey === 'referralConsultant') return { model: 'consultant', tier: 'consultant' };
+  if (programmeKey === 'referralConsultant') {
+    if (normalizedLevel === 'registered & influenced referral') return { model: 'consultant', tier: 'consultant' };
+    return null;
+  }
   if (programmeKey === 'reseller') {
     if (normalizedLevel === 'accredited') return { model: 'reseller', tier: 'accredited' };
     if (normalizedLevel === 'silver') return { model: 'reseller', tier: 'silver' };
@@ -8523,9 +8529,9 @@ function getPartnerTieringTargetExampleContext(programme, profile) {
     return profileKey && profile && profile.type === profileKey.model && profile.tier === profileKey.tier;
   }) || tiers[0] || null;
   if (!activeTier) return null;
-  var targetRevenue = Number(activeTier.targetBandMin || 0);
-  var hasCalculableTarget = Number.isFinite(targetRevenue) && targetRevenue > 0;
-  var targetLabel = hasCalculableTarget ? 'To reach £' + targetRevenue.toLocaleString('en-GB') : 'No calculable annual target';
+  var targetRevenue = activeTier.minimumRevenueTarget;
+  var hasCalculableTarget = typeof targetRevenue === 'number' && Number.isFinite(targetRevenue) && targetRevenue > 0;
+  var targetLabel = hasCalculableTarget ? 'To reach £' + targetRevenue.toLocaleString('en-GB') : 'No revenue target applies to this tier.';
   return { tier: activeTier, targetRevenue: hasCalculableTarget ? targetRevenue : null, targetLabel: targetLabel, hasCalculableTarget: hasCalculableTarget };
 }
 
@@ -8543,7 +8549,7 @@ function renderPartnerTieringTargetExamples(programme, profile) {
   if (!hasRevenueTarget) {
     return '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '">' +
       '<h2 class="license-features-section-title">Target Examples · ' + escapeHtml(context.tier.level) + '</h2>' +
-      '<div class="partner-tiering-no-target"><h3>No calculable annual target</h3><p>This tier does not have a positive minimum revenue value, so licence-count examples cannot be calculated for it.</p></div>' +
+      '<div class="partner-tiering-no-target"><h3>No revenue target</h3><p>No revenue target applies to this tier.</p></div>' +
     '</section>';
   }
   var examples = getPartnerTieringExampleProducts();
@@ -8589,13 +8595,10 @@ function renderPartnerTieringWorkspace() {
   var rows = (programme.tiers || []).map(function(tier) {
     var profileKey = getProgrammeProfileKey(activePartnerTieringPage, tier.level);
     var isActive = profileKey && activeProfile.type === profileKey.model && activeProfile.tier === profileKey.tier;
-    var bandParts = [];
-    if (typeof tier.targetBandMin === 'number') bandParts.push('Min £' + tier.targetBandMin.toLocaleString('en-GB'));
-    if (typeof tier.targetBandMax === 'number') bandParts.push('Max £' + tier.targetBandMax.toLocaleString('en-GB'));
     return '<tr' + (isActive ? ' class="partner-tiering-current-row"' : '') + '>' +
       '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.level) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
       '<td>' + escapeHtml(tier.marginLabel || tier.commissionLabel || '—') + '</td>' +
-      '<td>' + escapeHtml(tier.revenueTarget || '—') + (bandParts.length ? '<div class="partner-programme-band">' + escapeHtml(bandParts.join(' · ')) + '</div>' : '') + '</td>' +
+      '<td>' + escapeHtml(tier.revenueTargetLabel || '—') + '</td>' +
       '<td>' + escapeHtml(tier.commitment || '—') + '</td>' +
       '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
     '</tr>';
