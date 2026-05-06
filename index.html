@@ -618,6 +618,7 @@
   .level-badge.silver     { background: #eef2f5; color: #3d5060; border: 1px solid #a0b0bc; }
   .level-badge.gold       { background: #fff7e0; color: #7a5c00; border: 1px solid #ddb830; }
   .level-badge.platinum   { background: #e9f1f7; color: #1f2f3a; border: 1px solid #9fb5c3; }
+  .level-badge.consultant { background: #f3e8f7; color: #5f3d70; border: 1px solid #c7a1d7; }
 
   .meta-field label {
     display: block;
@@ -2679,6 +2680,16 @@
     margin: 0;
     line-height: 1.5;
   }
+  .partner-tiering-context {
+    color: var(--charcoal-dark);
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .partner-tiering-context span {
+    color: var(--text-muted);
+    font-weight: 600;
+  }
   .partner-tiering-note {
     background: var(--green-pale);
     border-left: 4px solid var(--green);
@@ -2691,6 +2702,15 @@
   }
   .partner-tiering-table {
     min-width: 760px;
+  }
+  .partner-tiering-table .partner-tiering-current-row th,
+  .partner-tiering-table .partner-tiering-current-row td {
+    background: #f0faf5;
+    border-bottom-color: rgba(99, 171, 143, 0.45);
+    box-shadow: inset 0 1px 0 rgba(99, 171, 143, 0.35), inset 0 -1px 0 rgba(99, 171, 143, 0.35);
+  }
+  .partner-tiering-table .partner-tiering-current-row th:first-child {
+    border-left: 4px solid var(--green);
   }
   .partner-tiering-table th:first-child,
   .partner-tiering-table td:first-child {
@@ -2944,6 +2964,7 @@
       <div class="price-list-title">Partner Tiering</div>
       <div class="price-list-header-actions">
         <div class="price-list-profile">Uses current partner profile context to explain partner models, tiers, and discounts.</div>
+        <div class="partner-tiering-context" id="partnerTieringContextNote"><span>Current context:</span> Reseller · Accredited · 20%</div>
       </div>
     </div>
     <div id="partnerTieringModuleRoot"></div>
@@ -5102,6 +5123,10 @@ function onPartnerProfileChange() {
   renderQuote();
   renderProductList();
   renderPartnerPriceList();
+  if (isPartnerTieringVisible()) {
+    syncPartnerTieringPageToProfile();
+    renderPartnerTieringWorkspace();
+  }
   updateWorkflowContextBar();
   persistWorkflowContext();
 }
@@ -5120,6 +5145,10 @@ function applyGlobalCommercialContext(payload, options) {
   renderQuote();
   renderProductList();
   renderPartnerPriceList();
+  if (isPartnerTieringVisible()) {
+    syncPartnerTieringPageToProfile();
+    renderPartnerTieringWorkspace();
+  }
   updateWorkflowContextBar();
   persistWorkflowContext();
   return true;
@@ -8268,11 +8297,13 @@ function openLicenseFeatures() {
 }
 
 
-function openPartnerTiering() {
+function openPartnerTiering(options) {
+  var settings = options || {};
   document.getElementById('launchpadOverlay').classList.add('hidden');
   document.getElementById('priceListOverlay').classList.add('hidden');
   document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
   document.getElementById('partnerTieringOverlay').classList.remove('hidden');
+  if (settings.syncToProfile) syncPartnerTieringPageToProfile();
   renderPartnerTieringWorkspace();
   updateToolbarState();
   updateWorkflowContextBar();
@@ -8304,6 +8335,31 @@ function renderProgrammeBenefits(benefits) {
 
 var activePartnerTieringPage = 'reseller';
 
+function getPartnerTieringProgrammeKeyForProfile(profile) {
+  var resolvedProfile = profile || getSelectedQuoteProfile();
+  var model = resolvedProfile && (resolvedProfile.type || resolvedProfile.model);
+  if (model === 'consultant') return 'referralConsultant';
+  if (model === 'reseller' || model === 'msp') return model;
+  return null;
+}
+
+function syncPartnerTieringPageToProfile(profile) {
+  var programmeKey = getPartnerTieringProgrammeKeyForProfile(profile);
+  if (programmeKey && PARTNER_TIERING_PROGRAMME[programmeKey]) activePartnerTieringPage = programmeKey;
+  return programmeKey;
+}
+
+function formatPartnerTieringContext(profile) {
+  var resolvedProfile = profile || getSelectedQuoteProfile();
+  if (!resolvedProfile) return 'Not set';
+  return resolvedProfile.typeLabel + ' · ' + resolvedProfile.tierLabel + ' · ' + Math.round((resolvedProfile.discount || 0) * 100) + '%';
+}
+
+function isPartnerTieringVisible() {
+  var overlay = document.getElementById('partnerTieringOverlay');
+  return !!(overlay && !overlay.classList.contains('hidden'));
+}
+
 function setPartnerTieringPage(tab) {
   if (!PARTNER_TIERING_PROGRAMME[tab]) return;
   activePartnerTieringPage = tab;
@@ -8315,7 +8371,9 @@ function renderPartnerTieringWorkspace() {
   if (!root) return;
   if (!PARTNER_TIERING_PROGRAMME[activePartnerTieringPage]) activePartnerTieringPage = 'reseller';
 
-  var activeProfile = getCommercialProfile();
+  var activeProfile = getSelectedQuoteProfile();
+  var contextNote = document.getElementById('partnerTieringContextNote');
+  if (contextNote) contextNote.innerHTML = '<span>Current context:</span> ' + escapeHtml(formatPartnerTieringContext(activeProfile));
   var programmeKeys = Object.keys(PARTNER_TIERING_PROGRAMME);
   var programme = PARTNER_TIERING_PROGRAMME[activePartnerTieringPage];
   var tabs = programmeKeys.map(function(programmeKey) {
@@ -8330,7 +8388,7 @@ function renderPartnerTieringWorkspace() {
     var bandParts = [];
     if (typeof tier.targetBandMin === 'number') bandParts.push('Min £' + tier.targetBandMin.toLocaleString('en-GB'));
     if (typeof tier.targetBandMax === 'number') bandParts.push('Max £' + tier.targetBandMax.toLocaleString('en-GB'));
-    return '<tr>' +
+    return '<tr' + (isActive ? ' class="partner-tiering-current-row"' : '') + '>' +
       '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.level) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
       '<td>' + escapeHtml(tier.marginLabel || tier.commissionLabel || '—') + '</td>' +
       '<td>' + escapeHtml(tier.revenueTarget || '—') + (bandParts.length ? '<div class="partner-programme-band">' + escapeHtml(bandParts.join(' · ')) + '</div>' : '') + '</td>' +
@@ -8548,7 +8606,7 @@ function selectWorkspace(view, options) {
   if (view === 'launchpad') openLaunchpad();
   else if (view === 'price') openPriceList();
   else if (view === 'licenseFeatures') openLicenseFeatures();
-  else if (view === 'partnerTiering') openPartnerTiering();
+  else if (view === 'partnerTiering') openPartnerTiering({ syncToProfile: previousWorkspace === 'launchpad' });
   else openQuoteBuilder();
 
   if (view === 'quote') applyQuoteFilterState(workflowSessionState.quoteFilters || getStoredJson(WORKFLOW_CONTEXT_KEYS.quoteFilters, null));
