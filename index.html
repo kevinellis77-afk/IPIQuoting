@@ -2837,6 +2837,10 @@
   .partner-tiering-target-field input {
     max-width: 150px;
   }
+  .partner-tiering-target-field select,
+  .partner-tiering-target-field input {
+    width: 100%;
+  }
 
   .license-cards-grid {
     display:grid;
@@ -2907,7 +2911,7 @@
     align-items: center;
     gap: 6px;
   }
-  .license-page-tabs { display:inline-flex; gap:0; margin-bottom:12px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; }
+  .license-page-tabs { display:inline-flex; flex-wrap:wrap; gap:0; margin-bottom:12px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; }
   .license-page-tab { appearance:none; border:0; border-right:1px solid var(--border); background:#fff; color:var(--charcoal); border-radius:0; min-height:38px; min-width:150px; padding:9px 16px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; justify-content:center; flex:1 1 0; transition:background-color .2s ease,color .2s ease; }
   .license-page-tab:last-child { border-right:0; }
   .license-page-tab:hover { background:var(--light-gray); }
@@ -2937,6 +2941,38 @@
     .launchpad-cards,
     .price-list-controls {
       grid-template-columns: 1fr;
+    }
+    .launchpad-shell,
+    .price-list-shell,
+    .license-features-shell,
+    .partner-tiering-shell {
+      padding: 18px 16px 28px;
+    }
+    .price-list-header {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .price-list-header-actions {
+      align-items: stretch;
+      width: 100%;
+    }
+    .license-page-tabs {
+      display: flex;
+      width: 100%;
+    }
+    .license-page-tab {
+      min-width: min(150px, 100%);
+    }
+    .partner-tiering-table {
+      min-width: 680px;
+    }
+    .partner-tiering-target-field {
+      flex: 1 1 160px;
+      min-width: 0;
+    }
+    .partner-tiering-target-field input {
+      max-width: none;
     }
 
     #savedQuotesModal .modal {
@@ -8367,32 +8403,35 @@ function initPartnerPriceList() {
   bindPriceListSorting();
   syncPriceListFilterOptions();
   renderPartnerPriceList();
-  openLaunchpad();
+  if (getCurrentWorkspace() === 'launchpad') openLaunchpad();
+  else {
+    updateToolbarState();
+    updateWorkflowContextBar();
+  }
+}
+
+function setWorkspaceOverlayVisibility(activeOverlayId) {
+  ['launchpadOverlay', 'priceListOverlay', 'licenseFeaturesOverlay', 'partnerTieringOverlay'].forEach(function(overlayId) {
+    var overlay = document.getElementById(overlayId);
+    if (!overlay) return;
+    overlay.classList.toggle('hidden', overlayId !== activeOverlayId);
+  });
 }
 
 function openLaunchpad() {
-  document.getElementById('launchpadOverlay').classList.remove('hidden');
-  document.getElementById('priceListOverlay').classList.add('hidden');
-  document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
-  document.getElementById('partnerTieringOverlay').classList.add('hidden');
+  setWorkspaceOverlayVisibility('launchpadOverlay');
   updateToolbarState();
   updateWorkflowContextBar();
 }
 
 function openQuoteBuilder() {
-  document.getElementById('launchpadOverlay').classList.add('hidden');
-  document.getElementById('priceListOverlay').classList.add('hidden');
-  document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
-  document.getElementById('partnerTieringOverlay').classList.add('hidden');
+  setWorkspaceOverlayVisibility(null);
   updateToolbarState();
   updateWorkflowContextBar();
 }
 
 function openPriceList() {
-  document.getElementById('launchpadOverlay').classList.add('hidden');
-  document.getElementById('priceListOverlay').classList.remove('hidden');
-  document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
-  document.getElementById('partnerTieringOverlay').classList.add('hidden');
+  setWorkspaceOverlayVisibility('priceListOverlay');
   syncPriceListFilterOptions();
   renderPartnerPriceList();
   updateToolbarState();
@@ -8400,10 +8439,7 @@ function openPriceList() {
 }
 
 function openLicenseFeatures() {
-  document.getElementById('launchpadOverlay').classList.add('hidden');
-  document.getElementById('priceListOverlay').classList.add('hidden');
-  document.getElementById('licenseFeaturesOverlay').classList.remove('hidden');
-  document.getElementById('partnerTieringOverlay').classList.add('hidden');
+  setWorkspaceOverlayVisibility('licenseFeaturesOverlay');
   renderLicenseFeaturesWorkspace();
   updateToolbarState();
   updateWorkflowContextBar();
@@ -8412,10 +8448,7 @@ function openLicenseFeatures() {
 
 function openPartnerTiering(options) {
   var settings = options || {};
-  document.getElementById('launchpadOverlay').classList.add('hidden');
-  document.getElementById('priceListOverlay').classList.add('hidden');
-  document.getElementById('licenseFeaturesOverlay').classList.add('hidden');
-  document.getElementById('partnerTieringOverlay').classList.remove('hidden');
+  setWorkspaceOverlayVisibility('partnerTieringOverlay');
   if (settings.syncToProfile) syncPartnerTieringPageToProfile();
   renderPartnerTieringWorkspace();
   updateToolbarState();
