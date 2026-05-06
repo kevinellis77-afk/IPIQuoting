@@ -8466,23 +8466,20 @@ function setPartnerTieringPage(tab) {
   renderPartnerTieringWorkspace();
 }
 
-function calculatePartnerTieringTargetExample(targetRevenue, monthlyListRrp, tierMarginPercent) {
-  var target = Number(targetRevenue || 0);
-  var listRrp = Number(monthlyListRrp || 0);
-  var margin = Number(tierMarginPercent || 0);
-  if (target <= 0 || listRrp <= 0 || margin < 0 || margin >= 1) {
-    return {
-      partnerBuyPrice: 0,
-      annualPartnerRevenuePerLicence: 0,
-      requiredLicences: 0
-    };
+function calculatePartnerTieringTargetExample(minimumRevenueTarget, monthlyListRrp, tierMarginPercent) {
+  var target = Number(minimumRevenueTarget);
+  var listRrp = Number(monthlyListRrp);
+  var margin = Number(tierMarginPercent);
+  if (typeof minimumRevenueTarget !== 'number' || !Number.isFinite(target) || !Number.isFinite(listRrp) || !Number.isFinite(margin) || target < 0 || listRrp <= 0 || margin < 0 || margin >= 1) {
+    return null;
   }
   var partnerBuyPrice = listRrp * (1 - margin);
-  var annualPartnerRevenuePerLicence = partnerBuyPrice * 12;
+  var annualIpiRevenuePerLicence = partnerBuyPrice * 12;
+  if (!Number.isFinite(annualIpiRevenuePerLicence) || annualIpiRevenuePerLicence <= 0) return null;
   return {
     partnerBuyPrice: partnerBuyPrice,
-    annualPartnerRevenuePerLicence: annualPartnerRevenuePerLicence,
-    requiredLicences: Math.ceil(target / annualPartnerRevenuePerLicence)
+    annualIpiRevenuePerLicence: annualIpiRevenuePerLicence,
+    requiredLicences: Math.ceil(target / annualIpiRevenuePerLicence)
   };
 }
 
@@ -8522,17 +8519,33 @@ function getPartnerTieringExampleProducts() {
   }).filter(Boolean);
 }
 
-function getPartnerTieringTargetExampleContext(programme, profile) {
+function getPartnerTieringProgrammeName(programme) {
+  return String((programme && programme.label) || '').replace(/\s+Programme$/i, '') || 'Partner';
+}
+
+function getPartnerTieringActiveTier(programme, profile) {
   var tiers = (programme && programme.tiers) || [];
-  var activeTier = tiers.find(function(tier) {
+  var profileTier = tiers.find(function(tier) {
     var profileKey = getProgrammeProfileKey(activePartnerTieringPage, tier.level);
     return profileKey && profile && profile.type === profileKey.model && profile.tier === profileKey.tier;
-  }) || tiers[0] || null;
+  });
+  return profileTier || tiers[0] || null;
+}
+
+function getPartnerTieringTargetExampleContext(programme, profile) {
+  var activeTier = getPartnerTieringActiveTier(programme, profile);
   if (!activeTier) return null;
-  var targetRevenue = activeTier.minimumRevenueTarget;
-  var hasCalculableTarget = typeof targetRevenue === 'number' && Number.isFinite(targetRevenue) && targetRevenue > 0;
-  var targetLabel = hasCalculableTarget ? 'To reach £' + targetRevenue.toLocaleString('en-GB') : 'No revenue target applies to this tier.';
-  return { tier: activeTier, targetRevenue: hasCalculableTarget ? targetRevenue : null, targetLabel: targetLabel, hasCalculableTarget: hasCalculableTarget };
+  var minimumRevenueTarget = activeTier.minimumRevenueTarget;
+  var hasCalculableTarget = typeof minimumRevenueTarget === 'number' && Number.isFinite(minimumRevenueTarget);
+  var targetLabel = hasCalculableTarget ? 'Min £' + Number(minimumRevenueTarget).toLocaleString('en-GB') : 'No numeric minimum revenue target';
+  var heading = 'Licence examples to reach ' + getPartnerTieringProgrammeName(programme) + ' ' + activeTier.level + (hasCalculableTarget ? ' — ' + targetLabel : '');
+  return {
+    tier: activeTier,
+    minimumRevenueTarget: hasCalculableTarget ? Number(minimumRevenueTarget) : null,
+    targetLabel: targetLabel,
+    heading: heading,
+    hasCalculableTarget: hasCalculableTarget
+  };
 }
 
 function renderPartnerTieringProgrammeCaveats() {
@@ -8548,8 +8561,8 @@ function renderPartnerTieringTargetExamples(programme, profile) {
   var hasRevenueTarget = context.hasCalculableTarget && Number.isFinite(tierMarginPercent);
   if (!hasRevenueTarget) {
     return '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '">' +
-      '<h2 class="license-features-section-title">Target Examples · ' + escapeHtml(context.tier.level) + '</h2>' +
-      '<div class="partner-tiering-no-target"><h3>No revenue target</h3><p>No revenue target applies to this tier.</p></div>' +
+      '<h2 class="license-features-section-title">' + escapeHtml(context.heading) + '</h2>' +
+      '<div class="partner-tiering-no-target"><h3>No licence count calculated</h3><p>The active tier does not have a numeric minimum revenue target.</p></div>' +
     '</section>';
   }
   var examples = getPartnerTieringExampleProducts();
@@ -8557,20 +8570,21 @@ function renderPartnerTieringTargetExamples(programme, profile) {
     var product = example.product;
     var normalized = getNormalizedProduct(product);
     var monthlyListRrp = Number(product.list || 0);
-    var calculation = calculatePartnerTieringTargetExample(context.targetRevenue, monthlyListRrp, tierMarginPercent);
+    var calculation = calculatePartnerTieringTargetExample(context.minimumRevenueTarget, monthlyListRrp, tierMarginPercent);
+    if (!calculation) return '';
     return '<tr>' +
       '<th scope="row"><div class="partner-tiering-example-product">' + escapeHtml(example.label) + '</div><div class="partner-tiering-example-meta">' + escapeHtml(normalized.licenseType || 'N/A') + ' · ' + escapeHtml(normalized.billingLabel || 'N/A') + '</div></th>' +
       '<td class="num">' + fmtGBP(monthlyListRrp) + '</td>' +
       '<td class="num">' + Math.round(tierMarginPercent * 100) + '%</td>' +
       '<td class="num">' + fmtGBP(calculation.partnerBuyPrice) + '</td>' +
-      '<td class="num">' + fmtGBP(calculation.annualPartnerRevenuePerLicence) + '</td>' +
+      '<td class="num">' + fmtGBP(calculation.annualIpiRevenuePerLicence) + '</td>' +
       '<td class="num">' + calculation.requiredLicences.toLocaleString('en-GB') + '</td>' +
     '</tr>';
   }).join('');
   if (!rows) return '';
   return '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '">' +
-    '<h2 class="license-features-section-title">Target Examples · ' + escapeHtml(context.tier.level) + '</h2>' +
-    '<p><strong>' + escapeHtml(context.targetLabel) + '</strong> using the selected tier minimum and representative product List RRP and Partner Buy Price values.</p>' +
+    '<h2 class="license-features-section-title">' + escapeHtml(context.heading) + '</h2>' +
+    '<p><strong>' + escapeHtml(context.targetLabel) + '</strong> using the active tier minimum and representative product List RRP and Partner Buy Price values.</p>' +
     '<div class="partner-tiering-assumptions"><strong>Target example assumptions:</strong><ul><li>Revenue targets are measured against Partner Buy Price / partner spend with IPI, not customer-facing RRP.</li><li>Partner Buy Price is calculated as List RRP less the active tier margin.</li><li>Example counts are illustrative only and use annualised recurring licence revenue.</li><li>Final qualification depends on contracted revenue, customer mix, and IPI approval.</li></ul></div>' +
     '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-examples-table"><thead><tr><th>Product</th><th>List RRP / month</th><th>Partner margin</th><th>Partner Buy Price / month</th><th>Annual IPI revenue / licence</th><th>Licences required</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
   '</section>';
