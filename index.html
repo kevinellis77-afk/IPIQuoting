@@ -2718,6 +2718,26 @@
   .partner-tiering-table td:nth-child(5) {
     width: 24%;
   }
+  .partner-tiering-list-intro {
+    color: var(--text-muted);
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .partner-tiering-list {
+    margin: 0;
+    padding-left: 15px;
+    text-align: left;
+  }
+  .partner-tiering-list li {
+    line-height: 1.35;
+    margin: 0;
+  }
+  .partner-tiering-list li + li {
+    margin-top: 2px;
+  }
 
   .partner-tiering-examples-table {
     min-width: 980px;
@@ -4702,7 +4722,7 @@ const PARTNER_TIERING_PROGRAMME = {
         marginPercent: 0.20,
         revenueTargetLabel: 'Less than £50k Annual Revenue',
         minimumRevenueTarget: null,
-        commitment: 'Complete onboarding, maintain sales engagement, and register opportunities with IPI.',
+        commitments: ['Complete Partner Onboarding', 'Maintain Sales Engagement', 'Complete Deal Registration process for all Opportunities'],
         benefits: ['Access to partner price list', 'Sales enablement and bid support', 'IPI delivery and technical escalation support']
       },
       {
@@ -4711,7 +4731,8 @@ const PARTNER_TIERING_PROGRAMME = {
         marginPercent: 0.30,
         revenueTargetLabel: 'Min £50k',
         minimumRevenueTarget: 50000,
-        commitment: 'Build an active pipeline, complete product enablement, and run regular account reviews.',
+        commitmentIntro: 'As Accredited plus',
+        commitments: ['Build & Maintain an active Pipeline', 'Run regular Account Review Sessions'],
         benefits: ['Enhanced partner margin', 'Priority deal support', 'Co-marketing planning for approved campaigns']
       },
       {
@@ -4720,7 +4741,8 @@ const PARTNER_TIERING_PROGRAMME = {
         marginPercent: 0.35,
         revenueTargetLabel: 'Min £250k',
         minimumRevenueTarget: 250000,
-        commitment: 'Maintain a qualified forecast, named commercial owner, and demonstrable customer success cadence.',
+        commitmentIntro: 'As Silver plus',
+        commitments: ['Maintain a qualified forecast', 'Named Commercial Relationship Owner', 'Quarterly Business Reviews'],
         benefits: ['Gold margin level', 'Joint account planning', 'Executive sponsor access for strategic opportunities']
       },
       {
@@ -4729,7 +4751,8 @@ const PARTNER_TIERING_PROGRAMME = {
         marginPercent: 0.40,
         revenueTargetLabel: 'Min £500k',
         minimumRevenueTarget: 500000,
-        commitment: 'Strategic growth plan, executive reviews, and agreed annual revenue objectives.',
+        commitmentIntro: 'As Gold plus',
+        commitments: ['Produce Annual Strategic growth plan', 'Executive Alignment', 'Monthly Business Reviews'],
         benefits: ['Highest reseller margin', 'Strategic roadmap briefings', 'Priority commercial and solution-design support']
       }
     ]
@@ -4745,7 +4768,7 @@ const PARTNER_TIERING_PROGRAMME = {
         marginPercent: 0.35,
         revenueTargetLabel: 'Min £100k',
         minimumRevenueTarget: 100000,
-        commitment: 'Provide first-line customer management, operational ownership, and recurring service reporting.',
+        commitments: ['Provide 1st & 2nd Line Customer Support', 'Maintain Pre - Sales, Enablement & Support Accreditations', 'Quarterly Business Reviews'],
         benefits: ['MSP price-list access', 'Operational enablement', 'Service-design support for managed propositions']
       },
       {
@@ -4754,7 +4777,8 @@ const PARTNER_TIERING_PROGRAMME = {
         marginPercent: 0.45,
         revenueTargetLabel: 'Min £250k',
         minimumRevenueTarget: 250000,
-        commitment: 'Maintain a managed-service roadmap, forecast governance, and regular service reviews.',
+        commitmentIntro: 'As Silver plus',
+        commitments: ['Maintain a qualified forecast', 'Named Commercial Relationship Owner', 'Monthly Business Reviews'],
         benefits: ['Enhanced MSP margin', 'Priority operations engagement', 'Joint proposition development']
       },
       {
@@ -4763,7 +4787,8 @@ const PARTNER_TIERING_PROGRAMME = {
         marginPercent: 0.55,
         revenueTargetLabel: 'Min £500k',
         minimumRevenueTarget: 500000,
-        commitment: 'Strategic MSP plan, executive governance, and agreed growth targets across the managed base.',
+        commitmentIntro: 'As per Gold plus',
+        commitments: ['Produce Annual Strategic growth plan', 'Executive Alignment'],
         benefits: ['Highest MSP margin', 'Priority escalation path', 'Strategic roadmap and proposition alignment']
       }
     ]
@@ -4778,7 +4803,7 @@ const PARTNER_TIERING_PROGRAMME = {
         commissionLabel: '15% referral commission',
         revenueTargetLabel: 'N/A',
         minimumRevenueTarget: null,
-        commitment: 'Introduce the opportunity, support discovery, and remain engaged through qualification and handover.',
+        commitments: ['Introduce the Opportunity', 'Support discovery & qualification'],
         benefits: ['Referral commission on eligible revenue', 'IPI sales support', 'No resale billing obligation']
       },
       {
@@ -4786,7 +4811,8 @@ const PARTNER_TIERING_PROGRAMME = {
         commissionLabel: '15% referral commission',
         revenueTargetLabel: 'N/A',
         minimumRevenueTarget: null,
-        commitment: 'Register and influence qualified opportunities while IPI owns contracting and delivery commercials.',
+        commitmentIntro: 'As per Lead Referral plus',
+        commitments: ['Remain engaged throughout Sales cycle', 'Co-Sell & influence customer decision making'],
         benefits: ['Referral commission on eligible revenue', 'IPI sales support', 'No resale billing obligation']
       }
     ]
@@ -8415,6 +8441,23 @@ function renderProgrammeBenefits(benefits) {
   }).join('') + '</ul>';
 }
 
+function renderPartnerTieringCommitments(tier) {
+  var commitments = Array.isArray(tier && tier.commitments) ? tier.commitments : [];
+  var intro = tier && tier.commitmentIntro;
+  var legacyCommitment = tier && tier.commitment;
+  if (!commitments.length && !intro && !legacyCommitment) return '—';
+
+  var introHtml = intro ? '<span class="partner-tiering-list-intro">' + escapeHtml(intro) + '</span>' : '';
+  var listHtml = commitments.length
+    ? '<ul class="partner-tiering-list">' + commitments.map(function(commitment) {
+      return '<li>' + escapeHtml(commitment) + '</li>';
+    }).join('') + '</ul>'
+    : '';
+  var fallbackHtml = (!commitments.length && legacyCommitment) ? escapeHtml(legacyCommitment) : '';
+
+  return introHtml + listHtml + fallbackHtml;
+}
+
 var activePartnerTieringPage = 'reseller';
 
 function getPartnerTieringProgrammeKeyForProfile(profile) {
@@ -8601,7 +8644,7 @@ function renderPartnerTieringWorkspace() {
       '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.level) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
       '<td>' + escapeHtml(formatPartnerTieringMarginCommission(activePartnerTieringPage, tier)) + '</td>' +
       '<td>' + escapeHtml(tier.revenueTargetLabel || '—') + '</td>' +
-      '<td>' + escapeHtml(tier.commitment || '—') + '</td>' +
+      '<td>' + renderPartnerTieringCommitments(tier) + '</td>' +
       '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
     '</tr>';
   }).join('');
