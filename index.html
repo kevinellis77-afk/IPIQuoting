@@ -4718,8 +4718,7 @@ const PARTNER_TIERING_PROGRAMME = {
     tiers: [
       {
         level: 'Accredited',
-        marginLabel: '20% partner margin',
-        marginPercent: 0.20,
+        margin: 0.20,
         revenueTargetLabel: 'Less than £50k Annual Revenue',
         minimumRevenueTarget: null,
         commitments: ['Complete Partner Onboarding', 'Maintain Sales Engagement', 'Complete Deal Registration process for all Opportunities'],
@@ -4727,8 +4726,7 @@ const PARTNER_TIERING_PROGRAMME = {
       },
       {
         level: 'Silver',
-        marginLabel: '30% partner margin',
-        marginPercent: 0.30,
+        margin: 0.30,
         revenueTargetLabel: 'Min £50k',
         minimumRevenueTarget: 50000,
         commitmentIntro: 'As Accredited plus',
@@ -4737,8 +4735,7 @@ const PARTNER_TIERING_PROGRAMME = {
       },
       {
         level: 'Gold',
-        marginLabel: '35% partner margin',
-        marginPercent: 0.35,
+        margin: 0.35,
         revenueTargetLabel: 'Min £250k',
         minimumRevenueTarget: 250000,
         commitmentIntro: 'As Silver plus',
@@ -4747,8 +4744,7 @@ const PARTNER_TIERING_PROGRAMME = {
       },
       {
         level: 'Platinum',
-        marginLabel: '40% partner margin',
-        marginPercent: 0.40,
+        margin: 0.40,
         revenueTargetLabel: 'Min £500k',
         minimumRevenueTarget: 500000,
         commitmentIntro: 'As Gold plus',
@@ -4764,8 +4760,7 @@ const PARTNER_TIERING_PROGRAMME = {
     tiers: [
       {
         level: 'Silver',
-        marginLabel: '35% partner margin',
-        marginPercent: 0.35,
+        margin: 0.35,
         revenueTargetLabel: 'Min £100k',
         minimumRevenueTarget: 100000,
         commitments: ['Provide 1st & 2nd Line Customer Support', 'Maintain Pre - Sales, Enablement & Support Accreditations', 'Quarterly Business Reviews'],
@@ -4773,8 +4768,7 @@ const PARTNER_TIERING_PROGRAMME = {
       },
       {
         level: 'Gold',
-        marginLabel: '45% partner margin',
-        marginPercent: 0.45,
+        margin: 0.45,
         revenueTargetLabel: 'Min £250k',
         minimumRevenueTarget: 250000,
         commitmentIntro: 'As Silver plus',
@@ -4783,8 +4777,7 @@ const PARTNER_TIERING_PROGRAMME = {
       },
       {
         level: 'Platinum',
-        marginLabel: '55% partner margin',
-        marginPercent: 0.55,
+        margin: 0.55,
         revenueTargetLabel: 'Min £500k',
         minimumRevenueTarget: 500000,
         commitmentIntro: 'As per Gold plus',
@@ -4800,7 +4793,7 @@ const PARTNER_TIERING_PROGRAMME = {
     tiers: [
       {
         level: 'Lead Referral',
-        commissionLabel: '15% referral commission',
+        commission: 0.15,
         revenueTargetLabel: 'N/A',
         minimumRevenueTarget: null,
         commitments: ['Introduce the Opportunity', 'Support discovery & qualification'],
@@ -4808,7 +4801,7 @@ const PARTNER_TIERING_PROGRAMME = {
       },
       {
         level: 'Registered & Influenced Referral',
-        commissionLabel: '15% referral commission',
+        commission: 0.20,
         revenueTargetLabel: 'N/A',
         minimumRevenueTarget: null,
         commitmentIntro: 'As per Lead Referral plus',
@@ -8582,7 +8575,7 @@ function renderPartnerTieringProgrammeCaveats() {
 function renderPartnerTieringTargetExamples(programme, profile) {
   var context = getPartnerTieringTargetExampleContext(programme, profile);
   if (!context) return '';
-  var tierMarginPercent = Number(context.tier.marginPercent);
+  var tierMarginPercent = getPartnerTieringTargetMargin(activePartnerTieringPage, context.tier);
   var hasRevenueTarget = context.hasCalculableTarget && Number.isFinite(tierMarginPercent);
   if (!hasRevenueTarget) {
     return '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '">' +
@@ -8600,7 +8593,7 @@ function renderPartnerTieringTargetExamples(programme, profile) {
     return '<tr>' +
       '<th scope="row"><div class="partner-tiering-example-product">' + escapeHtml(example.label) + '</div><div class="partner-tiering-example-meta">' + escapeHtml(normalized.licenseType || 'N/A') + ' · ' + escapeHtml(normalized.billingLabel || 'N/A') + '</div></th>' +
       '<td class="num">' + fmtGBP(monthlyListRrp) + '</td>' +
-      '<td class="num">' + Math.round(tierMarginPercent * 100) + '%</td>' +
+      '<td class="num">' + formatPartnerTieringPercent(tierMarginPercent) + '</td>' +
       '<td class="num">' + fmtGBP(calculation.partnerBuyPrice) + '</td>' +
       '<td class="num">' + fmtGBP(calculation.annualIpiRevenuePerLicence) + '</td>' +
       '<td class="num">' + calculation.requiredLicences.toLocaleString('en-GB') + '</td>' +
@@ -8615,11 +8608,21 @@ function renderPartnerTieringTargetExamples(programme, profile) {
   '</section>';
 }
 
+function formatPartnerTieringPercent(value) {
+  var percent = Number(value);
+  if (!Number.isFinite(percent)) return '—';
+  return Math.round(percent * 100) + '%';
+}
+
+function getPartnerTieringTargetMargin(programmeKey, tier) {
+  if (programmeKey !== 'reseller' && programmeKey !== 'msp') return null;
+  var margin = Number(tier && tier.margin);
+  return Number.isFinite(margin) ? margin : null;
+}
+
 function formatPartnerTieringMarginCommission(programmeKey, tier) {
-  if (programmeKey === 'reseller' && typeof tier.marginPercent === 'number') {
-    return Math.round(tier.marginPercent * 100) + '%';
-  }
-  return tier.marginLabel || tier.commissionLabel || '—';
+  if (programmeKey === 'referralConsultant') return formatPartnerTieringPercent(tier && tier.commission);
+  return formatPartnerTieringPercent(tier && tier.margin);
 }
 
 function renderPartnerTieringWorkspace() {
