@@ -2976,21 +2976,21 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 10v10h14V10"></path></svg>
             Launchpad
           </button>
-          <button class="toolbar-menu-item" onclick="selectWorkspace('quote')">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg>
-            Quoting Tool
-          </button>
-          <button class="toolbar-menu-item" onclick="selectWorkspace('price')">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M3 12h18"></path><path d="M3 18h18"></path></svg>
-            Partner Price List
+          <button class="toolbar-menu-item" onclick="selectWorkspace('partnerTiering')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5"></path><path d="M8 17h10"></path><path d="M8 12h8"></path><path d="M8 7h5"></path></svg>
+            Partner Tiers
           </button>
           <button class="toolbar-menu-item" onclick="selectWorkspace('licenseFeatures')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 9.74-8 10-4.5-.26-8-5-8-10V6l8-4z"></path><path d="M9 12l2 2 4-4"></path></svg>
-            License Options &amp; Features
+            License Options
           </button>
-          <button class="toolbar-menu-item" onclick="selectWorkspace('partnerTiering')">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5"></path><path d="M8 17h10"></path><path d="M8 12h8"></path><path d="M8 7h5"></path></svg>
-            Partner Tiering
+          <button class="toolbar-menu-item" onclick="selectWorkspace('price')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M3 12h18"></path><path d="M3 18h18"></path></svg>
+            Channel Price List
+          </button>
+          <button class="toolbar-menu-item" onclick="selectWorkspace('quote')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg>
+            Quoting Tool
           </button>
         </div>
       </div>
@@ -3030,13 +3030,13 @@
     <div class="launchpad-cards">
       <div class="launchpad-card tiering">
         <div class="launchpad-card-icon">🏆</div>
-        <div class="launchpad-card-title">Partner Tiering</div>
+        <div class="launchpad-card-title">Partner Tiers</div>
         <div class="launchpad-card-copy">Review partner models, tier discounts, and commercial posture guidance.</div>
-        <button class="btn btn-primary" onclick="selectWorkspace('partnerTiering')">Open Partner Tiering</button>
+        <button class="btn btn-primary" onclick="selectWorkspace('partnerTiering')">Open Partner Tiers</button>
       </div>
       <div class="launchpad-card price">
         <div class="launchpad-card-icon">🔐</div>
-        <div class="launchpad-card-title">License Options &amp; Features</div>
+        <div class="launchpad-card-title">License Options</div>
         <div class="launchpad-card-copy">Review available license options &amp; feature packs.</div>
         <button class="btn btn-primary" onclick="selectWorkspace('licenseFeatures')">Open License Options</button>
       </div>
@@ -5203,7 +5203,7 @@ function clearWorkflowSessionContext() {
 }
 
 function updateWorkflowContextBar() {
-  const workspaceMap = { launchpad: 'Launchpad', quote: 'Quoting Tool', price: 'Partner Price List', licenseFeatures: 'License Options & Features', partnerTiering: 'Partner Tiering' };
+  const workspaceMap = { launchpad: 'Launchpad', quote: 'Quoting Tool', price: 'Channel Price List', licenseFeatures: 'License Options', partnerTiering: 'Partner Tiers' };
   const workspaceLabel = workspaceMap[getCurrentWorkspace()] || 'Launchpad';
   const profile = getSelectedQuoteProfile();
   const ref = (document.getElementById('quoteRef')?.value || '').trim() || 'Draft (not set)';
@@ -8972,10 +8972,10 @@ function updateToolbarState() {
   const workspaceLabel = workspace === 'quote'
     ? 'Quoting Tool'
     : (workspace === 'price'
-      ? 'Partner Price List'
+      ? 'Channel Price List'
       : (workspace === 'licenseFeatures'
-        ? 'License Options & Features'
-        : (workspace === 'partnerTiering' ? 'Partner Tiering' : 'Launchpad')));
+        ? 'License Options'
+        : (workspace === 'partnerTiering' ? 'Partner Tiers' : 'Launchpad')));
   workspaceBtn.firstChild.textContent = workspaceLabel + ' ';
   if (workspace === 'quote') {
     actionsBtn.classList.remove('hidden');
