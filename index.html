@@ -44,6 +44,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
     height: 60px;
     position: sticky;
     top: 0;
@@ -55,6 +56,17 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .app-logo-image {
+    display: block;
+    max-height: 44px;
+    max-width: 220px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
   }
 
   .logo-mark {
@@ -2896,6 +2908,19 @@
     .license-features-table { min-width: 0; }
   }
   @media (max-width: 980px) {
+    header {
+      padding: 0 16px;
+      gap: 10px;
+    }
+    .app-logo-image {
+      max-width: 180px;
+    }
+    .header-actions {
+      gap: 8px;
+    }
+    .toolbar-menu-btn {
+      min-width: 120px;
+    }
     .license-cards-grid.license-cards-grid--compact {
       grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
       max-width:none;
@@ -2954,14 +2979,31 @@
     }
   }
 
+  @media (max-width: 560px) {
+    header {
+      padding: 0 10px;
+      gap: 6px;
+    }
+    .app-logo-image {
+      max-width: 72px;
+    }
+    .header-actions {
+      gap: 6px;
+    }
+    .toolbar-menu-btn {
+      min-width: 88px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+  }
+
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo">
-    <div class="logo-mark">IPI</div>
-    <div class="logo-text"><span>Channel Commercial Tools</span></div>
+    <img class="app-logo-image" src="assets/ipi-logo.svg" alt="IP Integration logo">
   </div>
   <div class="header-actions">
     <div class="toolbar-menu">
