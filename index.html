@@ -4963,6 +4963,10 @@ function isServicesLikeCategory(product) {
   return !!(product && SERVICES_CATS.includes(product.cat));
 }
 
+function isPciCloudProduct(product) {
+  return !!(product && normalizeCategory(product.cat) === 'pcicloud');
+}
+
 function isHiddenForProfile(product, profile) {
   return false;
 }
@@ -4971,6 +4975,19 @@ function getProfileDiscountForProduct(profile, product) {
   if (!product) return 0;
   if (!profile) profile = getSelectedQuoteProfile();
   if (!profile) return 0;
+
+  if (isPciCloudProduct(product)) {
+    if (profile.type === 'reseller') {
+      if (profile.tier === 'accredited') return 0.20;
+      if (profile.tier === 'silver') return 0.25;
+      if (profile.tier === 'gold' || profile.tier === 'platinum') return 0.30;
+    }
+    if (profile.type === 'msp') {
+      if (profile.tier === 'silver') return 0.25;
+      if (profile.tier === 'gold' || profile.tier === 'platinum') return 0.30;
+    }
+    // Consultants keep their profile default; there is no PCI Cloud-specific override.
+  }
 
   if (isServicesLikeCategory(product)) {
     if (profile.type === 'consultant') return 0.15;
