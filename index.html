@@ -4963,6 +4963,8 @@ function isServicesLikeCategory(product) {
   return !!(product && SERVICES_CATS.includes(product.cat));
 }
 
+const PCI_CATEGORY_CANONICAL = 'PCI';
+const PCI_CATEGORY_DISPLAY_LABEL = 'PCI Cloud';
 const PCI_CATEGORY_VALUES = ['pci', 'pcicloud', 'cloudpci', 'pciproducts', 'pcicloudproducts'];
 
 function normalizePciCategoryValue(value) {
@@ -4982,7 +4984,7 @@ function isHiddenForProfile(product, profile) {
 }
 
 function getPciDiscountForProfile(profile) {
-  return getProfileDiscountForProduct(profile, { cat: 'PCI', list: 1, threshold: 1 });
+  return getProfileDiscountForProduct(profile, { cat: PCI_CATEGORY_CANONICAL, list: 1, threshold: 1 });
 }
 
 function getPciCapLabel(profile) {
@@ -5418,7 +5420,7 @@ const CATEGORY_PRIORITY = ['UCaaS', 'CCaaS', 'AI', 'PCI Cloud', 'Services', 'Con
 function getCategoryPriorityIndex(category) {
   const normalizedCategory = normalizeCategory(category);
   const index = CATEGORY_PRIORITY.findIndex(function(label) {
-    return normalizeCategory(label) === normalizedCategory;
+    return normalizeCategory(label) === normalizedCategory || (isPciCategoryValue(label) && isPciCategoryValue(category));
   });
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 }
@@ -5523,14 +5525,14 @@ function getCategoryFamilyOrder(category, productName = '') {
   const normalizedCategory = normalizeCategory(category);
   if (normalizedCategory === 'ccaas') return getCcaasFamilyOrder(productName);
   if (normalizedCategory === 'ai') return getAiFamilyOrder(productName);
-  if (normalizedCategory === 'pcicloud') return getPciProductFamilyOrder(productName);
+  if (isPciCategoryValue(category)) return getPciProductFamilyOrder(productName);
   return 999;
 }
 
 function getCategoryFamilyName(category, productName = '', fallbackName = '') {
   const normalizedCategory = normalizeCategory(category);
   if (normalizedCategory === 'ccaas') return getCcaasFamilySortName(productName);
-  if (normalizedCategory === 'pcicloud') return getPciFamilySortName(productName);
+  if (isPciCategoryValue(category)) return getPciFamilySortName(productName);
   if (normalizedCategory === 'ai') return getProductDisplayName({ name: productName, cleanName: fallbackName || productName });
   return fallbackName || productName || '';
 }
@@ -5969,7 +5971,7 @@ function renderBillingBlock(billingLabel, items) {
   // Group by category, in defined order
   const byCat = {};
   items.forEach(item => {
-    const cat = item.product.cat;
+    const cat = normalizeCategoryLabel(item.product.cat);
     if (!byCat[cat]) byCat[cat] = [];
     byCat[cat].push(item);
   });
@@ -7393,7 +7395,7 @@ function getGroupedQuoteData() {
   function groupByCat(items) {
     const map = {};
     items.forEach(item => {
-      const cat = item.product.cat;
+      const cat = normalizeCategoryLabel(item.product.cat);
       if (!map[cat]) map[cat] = [];
       map[cat].push(item);
     });
@@ -7809,7 +7811,7 @@ function buildNormalizedProduct(product) {
   const safeProduct = product || {};
   const canonical = deriveCanonicalProductFields(safeProduct.name, safeProduct.license_type, safeProduct.payment_type);
   const rawName = normalizeDisplayText(canonical.name, 'N/A');
-  const category = normalizeDisplayText(safeProduct.cat, 'Uncategorised');
+  const category = normalizeCategoryLabel(normalizeDisplayText(safeProduct.cat, 'Uncategorised'));
   const billing = normalizeBillingType(safeProduct.billing);
   const cleanName = normalizeDisplayText(removeLegacyCommercialSuffixes(safeProduct.cleanName || rawName), rawName);
 
@@ -9706,7 +9708,7 @@ function normalizeCategoryLabel(value) {
   if (normalized === 'UCAAS') return 'UCaaS';
   if (normalized === 'CCAAS') return 'CCaaS';
   if (normalized === 'AI') return 'AI';
-  if (normalized === 'PCICLOUD') return 'PCI Cloud';
+  if (isPciCategoryValue(value)) return PCI_CATEGORY_DISPLAY_LABEL;
   if (normalized === 'SERVICES') return 'Services';
   if (normalized === 'CONSULTANCY') return 'Consultancy';
   return String(value || 'Uncategorised').trim() || 'Uncategorised';
