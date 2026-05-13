@@ -8633,7 +8633,7 @@ function renderPartnerTieringProgrammeCaveats() {
   return '<div class="partner-tiering-caveats"><strong>Programme caveats:</strong><ul>' +
     '<li>Partner Tier is based upon Annual Recurring Revenue (ARR) received by IP Integration (Buy Price not RRP).</li>' +
     '<li>Every £ invoiced counts towards ARR Target.</li>' +
-    '<li>Transactional, non-committed revenues and Professional Services are subject to a percentage cap on margin.</li>' +
+    '<li>Certain Product Lines, Transactional line items, non-committed revenues and Professional Services are subject to a percentage caps on margin.</li>' +
     '<li>Initial Tier agreed at Contracting stage. 12 Month Initial Ramp period applies.</li>' +
     '<li>Tiers are reviewed annually.</li>' +
   '</ul></div>';
@@ -8696,7 +8696,7 @@ function renderPartnerTieringPdfSummaryHtml(profile, generatedOn) {
     return '<section class="section section--' + escapeHtml(programme.theme || 'green') + '">' +
       '<h2>' + escapeHtml(programme.label) + '</h2>' +
       '<p>' + escapeHtml(programme.description || '') + '</p>' +
-      '<table class="programme-summary-table"><thead><tr><th>Level</th><th>Margin / Commission</th><th>Minimum Annual Revenue</th><th>Commitments</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<table class="programme-summary-table"><thead><tr><th>Level</th><th>' + escapeHtml(getPartnerTieringValueHeading(programmeKey)) + '</th><th>Minimum Annual Revenue</th><th>Commitments</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table>' +
     '</section>';
   }).join('');
 
@@ -8718,7 +8718,7 @@ function renderPartnerTieringPdfSummaryHtml(profile, generatedOn) {
     <div class="doc-header"><div class="doc-logo"><img class="doc-logo-image" src="${DOC_LOGO_DATA_URL}" alt="IP Integration logo"><div><div class="doc-logo-name">IP Integration</div><div class="doc-logo-sub">Partner Programme Summary</div></div></div><div class="doc-title"><div class="doc-label">Internal IPI sales reference</div><h1>Partner Tiering Summary</h1><p>Confidential &mdash; For Partner Use Only</p></div></div>
     <div class="meta-grid"><div class="meta-cell"><div class="meta-label">Current context</div><div class="meta-value">${escapeHtml(formatPartnerTieringContext(profile))}</div></div><div class="meta-cell"><div class="meta-label">Generated</div><div class="meta-value">${escapeHtml(generatedOn)}</div></div></div>
     ${sections}
-    <div class="footer"><strong>Caveats:</strong><ul><li>Partner Tier is based upon Annual Recurring Revenue (ARR) received by IP Integration (Buy Price not RRP).</li><li>Every £ invoiced counts towards ARR Target.</li><li>Transactional, non-committed revenues and Professional Services are subject to a percentage cap on margin.</li><li>Initial Tier agreed at Contracting stage. 12 Month Initial Ramp period applies.</li><li>Tiers are reviewed annually.</li></ul></div>
+    <div class="footer"><strong>Caveats:</strong><ul><li>Partner Tier is based upon Annual Recurring Revenue (ARR) received by IP Integration (Buy Price not RRP).</li><li>Every £ invoiced counts towards ARR Target.</li><li>Certain Product Lines, Transactional line items, non-committed revenues and Professional Services are subject to a percentage caps on margin.</li><li>Initial Tier agreed at Contracting stage. 12 Month Initial Ramp period applies.</li><li>Tiers are reviewed annually.</li></ul></div>
   </body></html>`;
 }
 
@@ -8757,6 +8757,10 @@ function formatPartnerTieringMarginCommission(programmeKey, tier) {
   return formatPartnerTieringPercent(tier && tier.margin);
 }
 
+function getPartnerTieringValueHeading(programmeKey) {
+  return programmeKey === 'referralConsultant' ? 'Commission' : 'Core Margin';
+}
+
 function renderPartnerTieringWorkspace() {
   var root = document.getElementById('partnerTieringModuleRoot');
   if (!root) return;
@@ -8788,7 +8792,7 @@ function renderPartnerTieringWorkspace() {
   root.innerHTML = currentContextNote +
     '<div class="license-page-tabs" role="tablist" aria-label="Partner tiering programmes">' + tabs + '</div>' +
     '<section class="license-features-section partner-programme-section partner-programme-section--' + escapeHtml(programme.theme || 'green') + '"><h2 class="license-features-section-title">' + escapeHtml(programme.label) + '</h2><p>' + escapeHtml(programme.description || '') + '</p>' +
-    '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-table"><thead><tr><th>Level</th><th>Margin / Commission</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div class="license-features-table-wrap"><table class="license-features-table partner-tiering-table"><thead><tr><th>Level</th><th>' + escapeHtml(getPartnerTieringValueHeading(activePartnerTieringPage)) + '</th><th>Revenue Target</th><th>Commitment</th><th>Benefits</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
     renderPartnerTieringProgrammeCaveats() + '</section>' +
     renderPartnerTieringTargetExamples(programme, activeProfile);
 }
