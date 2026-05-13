@@ -72,6 +72,11 @@ function extractConstDeclaration(name) {
   let valueStart = equalsIndex + 1;
   while (/\s/.test(indexHtml[valueStart])) valueStart += 1;
   const openChar = indexHtml[valueStart];
+  if (openChar !== '[' && openChar !== '{') {
+    const statementEnd = indexHtml.indexOf(';', valueStart);
+    assert.notEqual(statementEnd, -1, `Expected ${name} declaration to end with a semicolon`);
+    return indexHtml.slice(markerIndex, statementEnd + 1);
+  }
   const closeChar = openChar === '[' ? ']' : '}';
   const value = readBalanced(indexHtml, valueStart, openChar, closeChar);
   return `const ${name} = ${value};`;
@@ -91,17 +96,22 @@ const subjectSource = [
   extractFunctionDeclaration('normalizeCategory'),
   'function getSelectedQuoteProfile() { return null; }',
   extractFunctionDeclaration('isServicesLikeCategory'),
-  extractFunctionDeclaration('isPciCloudProduct'),
+  extractConstDeclaration('PCI_CATEGORY_CANONICAL'),
+  extractConstDeclaration('PCI_CATEGORY_VALUES'),
+  extractFunctionDeclaration('normalizePciCategoryValue'),
+  extractFunctionDeclaration('isPciCategoryValue'),
+  extractFunctionDeclaration('isPciProduct'),
   extractFunctionDeclaration('isHiddenForProfile'),
   extractFunctionDeclaration('getProfileDiscountForProduct'),
   extractFunctionDeclaration('roundCurrency'),
   extractFunctionDeclaration('getPriceForProductByProfile'),
-  'globalThis.__subject = { PRODUCTS, getProfileDiscountForProduct, getPriceForProductByProfile };'
+  extractFunctionDeclaration('getPciDiscountForProfile'),
+  'globalThis.__subject = { PRODUCTS, getProfileDiscountForProduct, getPriceForProductByProfile, getPciDiscountForProfile, isPciProduct };'
 ].join('\n\n');
 
 const sandbox = { console };
 vm.runInNewContext(subjectSource, sandbox, { filename: 'index.html extracted discount subject' });
-const { PRODUCTS, getProfileDiscountForProduct, getPriceForProductByProfile } = sandbox.__subject;
+const { PRODUCTS, getProfileDiscountForProduct, getPriceForProductByProfile, getPciDiscountForProfile, isPciProduct } = sandbox.__subject;
 
 function productBySku(sku) {
   const product = PRODUCTS.find((candidate) => candidate.id === sku);
@@ -132,6 +142,9 @@ function assertPartnerPrice(profileInput, product, expectedPrice) {
 const pciStandardMonthly = productBySku('S100863');
 assert.equal(pciStandardMonthly.cat, 'PCI Cloud');
 assert.equal(pciStandardMonthly.list, 18.95);
+assert.equal(isPciProduct(pciStandardMonthly), true);
+assert.equal(isPciProduct({ cat: 'PCI' }), true);
+assert.equal(isPciProduct({ cat: 'PCI Cloud' }), true);
 
 const pciPremiumTransaction = productBySku('S101049');
 assert.equal(pciPremiumTransaction.cat, 'PCI Cloud');
@@ -149,6 +162,8 @@ const expectedPciDiscounts = [
 
 for (const [profileInput, expectedDiscount] of expectedPciDiscounts) {
   assertDiscount(profileInput, pciStandardMonthly, expectedDiscount);
+  assertDiscount(profileInput, { cat: 'PCI', id: 'SYNTHETIC-PCI' }, expectedDiscount);
+  assert.equal(getPciDiscountForProfile(profileInput), expectedDiscount);
   assertDiscount(profileInput, pciPremiumTransaction, expectedDiscount);
 }
 
@@ -178,4 +193,4 @@ assert.equal(consultancyProduct.cat, 'Consultancy');
 assertDiscount(profile('msp', 'gold', 0.45), consultancyProduct, 0.20);
 assertPartnerPrice(profile('msp', 'gold', 0.45), consultancyProduct, (consultancyProduct.list * 0.80).toFixed(2));
 
-console.log('PCI Cloud cap matrix and service/core margin discount checks passed.');
+console.log('PCI category cap matrix and service/core margin discount checks passed.');
