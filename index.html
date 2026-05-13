@@ -4963,23 +4963,33 @@ function isServicesLikeCategory(product) {
   return !!(product && SERVICES_CATS.includes(product.cat));
 }
 
-function isPciCloudProduct(product) {
-  return !!(product && normalizeCategory(product.cat) === 'pcicloud');
+const PCI_CATEGORY_VALUES = ['pci', 'pcicloud', 'cloudpci', 'pciproducts', 'pcicloudproducts'];
+
+function normalizePciCategoryValue(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function isPciCategoryValue(value) {
+  return PCI_CATEGORY_VALUES.includes(normalizePciCategoryValue(value));
+}
+
+function isPciProduct(product) {
+  return !!(product && isPciCategoryValue(product.cat));
 }
 
 function isHiddenForProfile(product, profile) {
   return false;
 }
 
-function getPciCloudDiscountForProfile(profile) {
-  return getProfileDiscountForProduct(profile, { cat: 'PCI Cloud', list: 1, threshold: 1 });
+function getPciDiscountForProfile(profile) {
+  return getProfileDiscountForProduct(profile, { cat: 'PCI', list: 1, threshold: 1 });
 }
 
-function getPciCloudCapLabel(profile) {
+function getPciCapLabel(profile) {
   if (!profile || !profile.discount) return '';
-  const pciDiscount = getPciCloudDiscountForProfile(profile);
+  const pciDiscount = getPciDiscountForProfile(profile);
   if (!(pciDiscount >= 0) || pciDiscount >= profile.discount) return '';
-  return 'PCI Cloud capped at ' + Math.round(pciDiscount * 100) + '%';
+  return 'PCI category capped at ' + Math.round(pciDiscount * 100) + '%';
 }
 
 function getProfileDiscountForProduct(profile, product) {
@@ -4987,7 +4997,7 @@ function getProfileDiscountForProduct(profile, product) {
   if (!profile) profile = getSelectedQuoteProfile();
   if (!profile) return 0;
 
-  if (isPciCloudProduct(product)) {
+  if (isPciProduct(product)) {
     if (profile.type === 'reseller') {
       if (profile.tier === 'accredited') return 0.20;
       if (profile.tier === 'silver') return 0.25;
@@ -4997,7 +5007,7 @@ function getProfileDiscountForProduct(profile, product) {
       if (profile.tier === 'silver') return 0.25;
       if (profile.tier === 'gold' || profile.tier === 'platinum') return 0.30;
     }
-    // Consultants keep their profile default; there is no PCI Cloud-specific override.
+    // Consultants keep their profile default; there is no PCI-specific override.
   }
 
   if (isServicesLikeCategory(product)) {
@@ -9513,7 +9523,7 @@ function updatePriceListFilterSummary() {
   const showRrpOnly = !!document.getElementById('priceListRrpOnly')?.checked;
   const searchValue = (document.getElementById('priceListSearch')?.value || '').trim();
 
-  const pciCapLabel = getPciCloudCapLabel(profile);
+  const pciCapLabel = getPciCapLabel(profile);
   filters.push(profile.typeLabel);
   filters.push(profile.tierLabel + ' (' + Math.round(profile.discount * 100) + '%' + (pciCapLabel ? '; ' + pciCapLabel : '') + ')');
   const selectedCategories = getMultiSelectValues(selectedCategory);
@@ -9640,7 +9650,7 @@ function renderPartnerPriceList() {
   const badge = document.getElementById('priceListProfileBadge');
   const showRrpOnly = !!document.getElementById('priceListRrpOnly')?.checked;
   if (badge) {
-    const pciCapLabel = getPciCloudCapLabel(profile);
+    const pciCapLabel = getPciCapLabel(profile);
     badge.textContent = showRrpOnly
       ? 'Profile: ' + profile.typeLabel + ' · ' + profile.tierLabel + ' · RRP only (no discount)'
       : 'Profile: ' + profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + '% discount' + (pciCapLabel ? '; ' + pciCapLabel : '');
@@ -9668,7 +9678,7 @@ function renderPartnerPriceList() {
         const base = normalized.basePrice;
         const net = showRrpOnly ? base : getPriceForProductByProfile(p, profile);
         const effectiveDiscount = showRrpOnly ? 0 : getProfileDiscountForProduct(profile, p);
-        const discountPill = !showRrpOnly && isPciCloudProduct(p) && effectiveDiscount > 0 && effectiveDiscount !== profile.discount
+        const discountPill = !showRrpOnly && isPciProduct(p) && effectiveDiscount > 0 && effectiveDiscount !== profile.discount
           ? ' <span class="price-list-discount-pill">' + Math.round(effectiveDiscount * 100) + '%</span>'
           : '';
         const billing = isRecurringBilling(p.billing) ? 'Recurring' : p.billing;
@@ -9839,7 +9849,7 @@ function exportPriceListPdf() {
 
   const showRrpOnly = !!document.getElementById('priceListRrpOnly')?.checked;
   const generatedOn = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
-  const pciCapLabel = getPciCloudCapLabel(profile);
+  const pciCapLabel = getPciCapLabel(profile);
   const titleProfile = showRrpOnly
     ? profile.typeLabel + ' · ' + profile.tierLabel + ' · RRP only'
     : profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + '% discount' + (pciCapLabel ? '; ' + pciCapLabel : '');
