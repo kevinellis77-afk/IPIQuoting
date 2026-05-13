@@ -123,6 +123,20 @@ function profile(type, tier, discount) {
   return { type, tier, discount, typeLabel: type, tierLabel: tier };
 }
 
+function syntheticProduct(cat, overrides = {}) {
+  return {
+    id: `SYNTHETIC-${cat.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}`,
+    name: `Synthetic ${cat}`,
+    cat,
+    list: 100,
+    threshold: 100,
+    billing: 'Monthly',
+    license_type: 'N/A',
+    payment_type: 'Monthly',
+    ...overrides
+  };
+}
+
 function assertDiscount(profileInput, product, expectedDiscount) {
   assert.equal(
     getProfileDiscountForProduct(profileInput, product),
@@ -145,6 +159,42 @@ assert.equal(pciStandardMonthly.list, 18.95);
 assert.equal(isPciProduct(pciStandardMonthly), true);
 assert.equal(isPciProduct({ cat: 'PCI' }), true);
 assert.equal(isPciProduct({ cat: 'PCI Cloud' }), true);
+assert.equal(isPciProduct({ cat: 'Cloud PCI' }), true);
+
+const pciAliasCatalogueRows = ['PCI', 'PCI Cloud', 'Cloud PCI'].map((cat) => syntheticProduct(cat));
+const documentedPciPriceExamples = [
+  [profile('reseller', 'silver', 0.30), 0.25, '75.00'],
+  [profile('reseller', 'gold', 0.35), 0.30, '70.00'],
+  [profile('msp', 'silver', 0.35), 0.25, '75.00'],
+  [profile('msp', 'gold', 0.45), 0.30, '70.00']
+];
+
+for (const [profileInput, expectedDiscount, expectedPrice] of documentedPciPriceExamples) {
+  for (const row of pciAliasCatalogueRows) {
+    assert.equal(isPciProduct(row), true, `${row.cat} should be treated as a PCI category alias`);
+    assertDiscount(profileInput, row, expectedDiscount);
+    assertPartnerPrice(profileInput, row, expectedPrice);
+  }
+}
+
+const nonPciCatalogueRow = syntheticProduct('CCaaS', { id: 'SYNTHETIC-NON-PCI' });
+for (const [profileInput] of documentedPciPriceExamples) {
+  assert.equal(isPciProduct(nonPciCatalogueRow), false);
+  assertDiscount(profileInput, nonPciCatalogueRow, profileInput.discount);
+  assertPartnerPrice(profileInput, nonPciCatalogueRow, (100 * (1 - profileInput.discount)).toFixed(2));
+}
+
+const serviceOverrideRows = [
+  [profile('reseller', 'gold', 0.35), syntheticProduct('Services'), 0.20, '80.00'],
+  [profile('msp', 'gold', 0.45), syntheticProduct('Services'), 0, '100.00'],
+  [profile('reseller', 'gold', 0.35), syntheticProduct('Consultancy'), 0.20, '80.00'],
+  [profile('msp', 'gold', 0.45), syntheticProduct('Consultancy'), 0.20, '80.00']
+];
+
+for (const [profileInput, row, expectedDiscount, expectedPrice] of serviceOverrideRows) {
+  assertDiscount(profileInput, row, expectedDiscount);
+  assertPartnerPrice(profileInput, row, expectedPrice);
+}
 
 const pciPremiumTransaction = productBySku('S101049');
 assert.equal(pciPremiumTransaction.cat, 'PCI Cloud');
@@ -162,7 +212,9 @@ const expectedPciDiscounts = [
 
 for (const [profileInput, expectedDiscount] of expectedPciDiscounts) {
   assertDiscount(profileInput, pciStandardMonthly, expectedDiscount);
-  assertDiscount(profileInput, { cat: 'PCI', id: 'SYNTHETIC-PCI' }, expectedDiscount);
+  assertDiscount(profileInput, syntheticProduct('PCI'), expectedDiscount);
+  assertDiscount(profileInput, syntheticProduct('PCI Cloud'), expectedDiscount);
+  assertDiscount(profileInput, syntheticProduct('Cloud PCI'), expectedDiscount);
   assert.equal(getPciDiscountForProfile(profileInput), expectedDiscount);
   assertDiscount(profileInput, pciPremiumTransaction, expectedDiscount);
 }
