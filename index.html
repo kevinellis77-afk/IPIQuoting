@@ -5019,12 +5019,16 @@ function getProfileDiscountForProduct(profile, product) {
   return profile.discount || 0;
 }
 
+function roundCurrency(value) {
+  return Math.round((Number(value) + 1e-9) * 100) / 100;
+}
+
 function getPriceForProductByProfile(product, profile) {
   const base = product && product.list > 0 ? product.list : (product ? product.threshold : 0);
   if (base <= 0) return 0;
   if (isHiddenForProfile(product, profile)) return 0;
   const disc = getProfileDiscountForProduct(profile, product);
-  return disc > 0 ? base * (1 - disc) : base;
+  return disc > 0 ? roundCurrency(base * (1 - disc)) : roundCurrency(base);
 }
 
 function getActiveDetailProfile() {
