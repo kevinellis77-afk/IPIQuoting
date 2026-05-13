@@ -4971,6 +4971,17 @@ function isHiddenForProfile(product, profile) {
   return false;
 }
 
+function getPciCloudDiscountForProfile(profile) {
+  return getProfileDiscountForProduct(profile, { cat: 'PCI Cloud', list: 1, threshold: 1 });
+}
+
+function getPciCloudCapLabel(profile) {
+  if (!profile || !profile.discount) return '';
+  const pciDiscount = getPciCloudDiscountForProfile(profile);
+  if (!(pciDiscount >= 0) || pciDiscount >= profile.discount) return '';
+  return 'PCI Cloud capped at ' + Math.round(pciDiscount * 100) + '%';
+}
+
 function getProfileDiscountForProduct(profile, product) {
   if (!product) return 0;
   if (!profile) profile = getSelectedQuoteProfile();
@@ -9498,8 +9509,9 @@ function updatePriceListFilterSummary() {
   const showRrpOnly = !!document.getElementById('priceListRrpOnly')?.checked;
   const searchValue = (document.getElementById('priceListSearch')?.value || '').trim();
 
+  const pciCapLabel = getPciCloudCapLabel(profile);
   filters.push(profile.typeLabel);
-  filters.push(profile.tierLabel + ' (' + Math.round(profile.discount * 100) + '%)');
+  filters.push(profile.tierLabel + ' (' + Math.round(profile.discount * 100) + '%' + (pciCapLabel ? '; ' + pciCapLabel : '') + ')');
   const selectedCategories = getMultiSelectValues(selectedCategory);
   const selectedPayments = getMultiSelectValues(selectedPayment);
   const selectedLicenses = getMultiSelectValues(selectedLicense);
@@ -9624,9 +9636,10 @@ function renderPartnerPriceList() {
   const badge = document.getElementById('priceListProfileBadge');
   const showRrpOnly = !!document.getElementById('priceListRrpOnly')?.checked;
   if (badge) {
+    const pciCapLabel = getPciCloudCapLabel(profile);
     badge.textContent = showRrpOnly
       ? 'Profile: ' + profile.typeLabel + ' · ' + profile.tierLabel + ' · RRP only (no discount)'
-      : 'Profile: ' + profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + '% discount';
+      : 'Profile: ' + profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + '% discount' + (pciCapLabel ? '; ' + pciCapLabel : '');
   }
   updatePriceListSortIndicators();
   updatePriceListFilterSummary();
@@ -9650,6 +9663,10 @@ function renderPartnerPriceList() {
         const normalized = getNormalizedProduct(p);
         const base = normalized.basePrice;
         const net = showRrpOnly ? base : getPriceForProductByProfile(p, profile);
+        const effectiveDiscount = showRrpOnly ? 0 : getProfileDiscountForProduct(profile, p);
+        const discountPill = !showRrpOnly && isPciCloudProduct(p) && effectiveDiscount > 0 && effectiveDiscount !== profile.discount
+          ? ' <span class="price-list-discount-pill">' + Math.round(effectiveDiscount * 100) + '%</span>'
+          : '';
         const billing = isRecurringBilling(p.billing) ? 'Recurring' : p.billing;
         html.push('<tr>' +
           '<td><div class="price-list-sku">' + p.id + '</div></td>' +
@@ -9658,7 +9675,7 @@ function renderPartnerPriceList() {
           '<td>' + block.licenseType + '</td>' +
           '<td>' + normalized.billingLabel + '</td>' +
           '<td class="price-list-money">' + fmtGBP(base) + '</td>' +
-          '<td class="price-list-money net">' + fmtGBP(net) + '</td>' +
+          '<td class="price-list-money net">' + fmtGBP(net) + discountPill + '</td>' +
           '<td class="price-list-icon-cell"><button class="price-list-info-btn" title="View details" onclick="openProductDetail(\'' + p.id + '\')">i</button></td>' +
         '</tr>');
       });
@@ -9818,9 +9835,10 @@ function exportPriceListPdf() {
 
   const showRrpOnly = !!document.getElementById('priceListRrpOnly')?.checked;
   const generatedOn = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  const pciCapLabel = getPciCloudCapLabel(profile);
   const titleProfile = showRrpOnly
     ? profile.typeLabel + ' · ' + profile.tierLabel + ' · RRP only'
-    : profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + '% discount';
+    : profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + '% discount' + (pciCapLabel ? '; ' + pciCapLabel : '');
 
   const groupedSections = groupRowsForDisplay(rows);
   const categorySections = groupedSections.map(function(section) {
