@@ -175,7 +175,9 @@ const documentedPciPriceExamples = [
   [profile('reseller', 'silver', 0.30), 0.25, '75.00'],
   [profile('reseller', 'gold', 0.35), 0.30, '70.00'],
   [profile('msp', 'silver', 0.35), 0.25, '75.00'],
-  [profile('msp', 'gold', 0.45), 0.30, '70.00']
+  [profile('msp', 'gold', 0.45), 0.35, '65.00'],
+  [profile('reseller', 'platinum', 0.40), 0.35, '65.00'],
+  [profile('msp', 'platinum', 0.50), 0.40, '60.00']
 ];
 
 for (const [profileInput, expectedDiscount, expectedPrice] of documentedPciPriceExamples) {
@@ -213,10 +215,10 @@ const expectedPciDiscounts = [
   [profile('reseller', 'accredited', 0.20), 0.20],
   [profile('reseller', 'silver', 0.30), 0.25],
   [profile('reseller', 'gold', 0.35), 0.30],
-  [profile('reseller', 'platinum', 0.40), 0.30],
+  [profile('reseller', 'platinum', 0.40), 0.35],
   [profile('msp', 'silver', 0.35), 0.25],
-  [profile('msp', 'gold', 0.45), 0.30],
-  [profile('msp', 'platinum', 0.50), 0.30]
+  [profile('msp', 'gold', 0.45), 0.35],
+  [profile('msp', 'platinum', 0.50), 0.40]
 ];
 
 for (const [profileInput, expectedDiscount] of expectedPciDiscounts) {
@@ -258,10 +260,10 @@ const expectedPartnerTieringPciMargins = [
   ['reseller', 'Accredited', 0.20, 'ECX 20% / PCI 20%'],
   ['reseller', 'Silver', 0.25, 'ECX 30% / PCI 25%'],
   ['reseller', 'Gold', 0.30, 'ECX 35% / PCI 30%'],
-  ['reseller', 'Platinum', 0.30, 'ECX 40% / PCI 30%'],
+  ['reseller', 'Platinum', 0.35, 'ECX 40% / PCI 35%'],
   ['msp', 'Silver', 0.25, 'ECX 35% / PCI 25%'],
-  ['msp', 'Gold', 0.30, 'ECX 45% / PCI 30%'],
-  ['msp', 'Platinum', 0.30, 'ECX 50% / PCI 30%']
+  ['msp', 'Gold', 0.35, 'ECX 45% / PCI 35%'],
+  ['msp', 'Platinum', 0.40, 'ECX 50% / PCI 40%']
 ];
 
 for (const [programmeKey, tierLevel, expectedPciMargin, expectedPdfText] of expectedPartnerTieringPciMargins) {
