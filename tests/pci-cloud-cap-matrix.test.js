@@ -93,6 +93,7 @@ function extractFunctionDeclaration(name) {
 const subjectSource = [
   extractConstDeclaration('PRODUCTS'),
   extractConstDeclaration('SERVICES_CATS'),
+  extractConstDeclaration('PARTNER_TIERING_PROGRAMME'),
   extractFunctionDeclaration('normalizeCategory'),
   'function getSelectedQuoteProfile() { return null; }',
   extractFunctionDeclaration('isServicesLikeCategory'),
@@ -106,12 +107,20 @@ const subjectSource = [
   extractFunctionDeclaration('roundCurrency'),
   extractFunctionDeclaration('getPriceForProductByProfile'),
   extractFunctionDeclaration('getPciDiscountForProfile'),
-  'globalThis.__subject = { PRODUCTS, getProfileDiscountForProduct, getPriceForProductByProfile, getPciDiscountForProfile, isPciProduct };'
+  `function escapeHtml(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'); }`,
+  extractFunctionDeclaration('getProgrammeProfileKey'),
+  extractFunctionDeclaration('formatPartnerTieringPercent'),
+  extractFunctionDeclaration('getPartnerTieringPciMargin'),
+  extractFunctionDeclaration('formatPartnerTieringMarginCommission'),
+  extractFunctionDeclaration('renderPartnerTieringMarginCommission'),
+  extractFunctionDeclaration('formatPartnerTieringPdfMarginCommission'),
+  extractFunctionDeclaration('getPartnerTieringValueHeading'),
+  'globalThis.__subject = { PRODUCTS, PARTNER_TIERING_PROGRAMME, getProfileDiscountForProduct, getPriceForProductByProfile, getPciDiscountForProfile, isPciProduct, getPartnerTieringPciMargin, renderPartnerTieringMarginCommission, formatPartnerTieringPdfMarginCommission, getPartnerTieringValueHeading };'
 ].join('\n\n');
 
 const sandbox = { console };
 vm.runInNewContext(subjectSource, sandbox, { filename: 'index.html extracted discount subject' });
-const { PRODUCTS, getProfileDiscountForProduct, getPriceForProductByProfile, getPciDiscountForProfile, isPciProduct } = sandbox.__subject;
+const { PRODUCTS, PARTNER_TIERING_PROGRAMME, getProfileDiscountForProduct, getPriceForProductByProfile, getPciDiscountForProfile, isPciProduct, getPartnerTieringPciMargin, renderPartnerTieringMarginCommission, formatPartnerTieringPdfMarginCommission, getPartnerTieringValueHeading } = sandbox.__subject;
 
 function productBySku(sku) {
   const product = PRODUCTS.find((candidate) => candidate.id === sku);
@@ -245,4 +254,36 @@ assert.equal(consultancyProduct.cat, 'Consultancy');
 assertDiscount(profile('msp', 'gold', 0.45), consultancyProduct, 0.20);
 assertPartnerPrice(profile('msp', 'gold', 0.45), consultancyProduct, (consultancyProduct.list * 0.80).toFixed(2));
 
-console.log('PCI category cap matrix and service/core margin discount checks passed.');
+const expectedPartnerTieringPciMargins = [
+  ['reseller', 'Accredited', 0.20, 'ECX 20% / PCI 20%'],
+  ['reseller', 'Silver', 0.25, 'ECX 30% / PCI 25%'],
+  ['reseller', 'Gold', 0.30, 'ECX 35% / PCI 30%'],
+  ['reseller', 'Platinum', 0.30, 'ECX 40% / PCI 30%'],
+  ['msp', 'Silver', 0.25, 'ECX 35% / PCI 25%'],
+  ['msp', 'Gold', 0.30, 'ECX 45% / PCI 30%'],
+  ['msp', 'Platinum', 0.30, 'ECX 50% / PCI 30%']
+];
+
+for (const [programmeKey, tierLevel, expectedPciMargin, expectedPdfText] of expectedPartnerTieringPciMargins) {
+  const tier = PARTNER_TIERING_PROGRAMME[programmeKey].tiers.find((candidate) => candidate.level === tierLevel);
+  assert.ok(tier, `Expected ${programmeKey} ${tierLevel} to exist in PARTNER_TIERING_PROGRAMME`);
+  const profileInput = profile(programmeKey, tierLevel.toLowerCase(), tier.margin);
+  assert.equal(
+    getPartnerTieringPciMargin(programmeKey, tier),
+    getProfileDiscountForProduct(profileInput, syntheticProduct('PCI Cloud')),
+    `${programmeKey} ${tierLevel} Partner Tiering PCI margin should align with getProfileDiscountForProduct`
+  );
+  assert.equal(getPartnerTieringPciMargin(programmeKey, tier), expectedPciMargin);
+  assert.equal(formatPartnerTieringPdfMarginCommission(programmeKey, tier), expectedPdfText);
+  const pillHtml = renderPartnerTieringMarginCommission(programmeKey, tier);
+  assert.match(pillHtml, /partner-tiering-margin-pill/);
+  assert.match(pillHtml, /ECX\/Core/);
+  assert.match(pillHtml, /PCI/);
+}
+
+assert.equal(getPartnerTieringValueHeading('referralConsultant'), 'Commission');
+assert.equal(getPartnerTieringValueHeading('reseller'), 'Margins');
+assert.equal(getPartnerTieringValueHeading('msp'), 'Margins');
+assert.equal(formatPartnerTieringPdfMarginCommission('referralConsultant', PARTNER_TIERING_PROGRAMME.referralConsultant.tiers[0]), '15%');
+
+console.log('PCI category cap matrix, Partner Tiering PCI margin, and service/core margin discount checks passed.');

@@ -2714,6 +2714,50 @@
   .partner-tiering-table {
     min-width: 760px;
   }
+  .partner-tiering-margin-pill {
+    align-items: stretch;
+    background: #f7faf9;
+    border: 1px solid rgba(99, 171, 143, 0.24);
+    border-radius: 999px;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 2px;
+    vertical-align: middle;
+  }
+  .partner-tiering-margin-segment {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    flex: 1 1 78px;
+    gap: 5px;
+    justify-content: space-between;
+    line-height: 1.2;
+    min-width: 0;
+    padding: 5px 8px;
+    white-space: nowrap;
+  }
+  .partner-tiering-margin-segment--core {
+    background: rgba(99, 171, 143, 0.14);
+  }
+  .partner-tiering-margin-segment--pci {
+    background: rgba(37, 120, 131, 0.13);
+  }
+  .partner-tiering-margin-label {
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .partner-tiering-margin-value {
+    color: var(--charcoal-dark);
+    font-size: 12px;
+    font-weight: 800;
+  }
   .partner-tiering-table .partner-tiering-current-row th,
   .partner-tiering-table .partner-tiering-current-row td {
     background: #f0faf5;
@@ -3115,7 +3159,7 @@
   <div class="partner-tiering-shell">
     <div class="price-list-header">
       <div class="price-list-title">Partner Tiering</div>
-      <div class="partner-tiering-title-helper">Compare partner programme eligibility, indicative margins, commitments, benefits, and target licence examples. Commercial pricing remains sourced from the active pricing matrix.</div>
+      <div class="partner-tiering-title-helper">Compare partner programme eligibility, indicative margins, commitments, benefits, and target licence examples. PCI Cloud products may have capped margins shown separately from ECX/Core; commercial pricing remains sourced from the active pricing matrix.</div>
     </div>
     <div class="partner-tiering-actions">
       <button class="btn btn-primary" type="button" onclick="downloadPartnerTieringSummaryPdf()">Download Partner Summary PDF</button>
@@ -8730,7 +8774,7 @@ function renderPartnerTieringPdfSummaryHtml(profile, generatedOn) {
       var isActive = profileKey && profile && profile.type === profileKey.model && profile.tier === profileKey.tier;
       return '<tr' + (isActive ? ' class="active-tier"' : '') + '>' +
         '<th scope="row"><span class="tier-name">' + escapeHtml(tier.level) + '</span>' + (isActive ? ' <span class="current-profile-label">Current profile</span>' : '') + '</th>' +
-        '<td class="percentage-cell">' + escapeHtml(formatPartnerTieringMarginCommission(programmeKey, tier)) + '</td>' +
+        '<td class="percentage-cell">' + escapeHtml(formatPartnerTieringPdfMarginCommission(programmeKey, tier)) + '</td>' +
         '<td>' + escapeHtml(tier.revenueTargetLabel || '—') + '</td>' +
         '<td>' + renderPartnerTieringCommitments(tier) + '</td>' +
         '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
@@ -8796,13 +8840,43 @@ function getPartnerTieringTargetMargin(programmeKey, tier) {
   return Number.isFinite(margin) ? margin : null;
 }
 
+function getPartnerTieringPciMargin(programmeKey, tier) {
+  var profileKey = getProgrammeProfileKey(programmeKey, tier && tier.level);
+  if (!profileKey) return null;
+  var profile = {
+    type: profileKey.model,
+    tier: profileKey.tier,
+    discount: Number(tier && tier.margin)
+  };
+  return getProfileDiscountForProduct(profile, { cat: PCI_CATEGORY_CANONICAL, list: 1, threshold: 1 });
+}
+
 function formatPartnerTieringMarginCommission(programmeKey, tier) {
   if (programmeKey === 'referralConsultant') return formatPartnerTieringPercent(tier && tier.commission);
   return formatPartnerTieringPercent(tier && tier.margin);
 }
 
+function renderPartnerTieringMarginCommission(programmeKey, tier) {
+  if (programmeKey === 'referralConsultant') return escapeHtml(formatPartnerTieringMarginCommission(programmeKey, tier));
+  var segments = [
+    { label: 'ECX/Core', value: tier && tier.margin, className: 'partner-tiering-margin-segment--core' },
+    { label: 'PCI', value: getPartnerTieringPciMargin(programmeKey, tier), className: 'partner-tiering-margin-segment--pci' }
+  ];
+  return '<span class="partner-tiering-margin-pill">' + segments.map(function(segment) {
+    return '<span class="partner-tiering-margin-segment ' + escapeHtml(segment.className) + '">' +
+      '<span class="partner-tiering-margin-label">' + escapeHtml(segment.label) + '</span>' +
+      '<span class="partner-tiering-margin-value">' + escapeHtml(formatPartnerTieringPercent(segment.value)) + '</span>' +
+    '</span>';
+  }).join('') + '</span>';
+}
+
+function formatPartnerTieringPdfMarginCommission(programmeKey, tier) {
+  if (programmeKey === 'referralConsultant') return formatPartnerTieringMarginCommission(programmeKey, tier);
+  return 'ECX ' + formatPartnerTieringPercent(tier && tier.margin) + ' / PCI ' + formatPartnerTieringPercent(getPartnerTieringPciMargin(programmeKey, tier));
+}
+
 function getPartnerTieringValueHeading(programmeKey) {
-  return programmeKey === 'referralConsultant' ? 'Commission' : 'Core Margin';
+  return programmeKey === 'referralConsultant' ? 'Commission' : 'Margins';
 }
 
 function renderPartnerTieringWorkspace() {
@@ -8825,7 +8899,7 @@ function renderPartnerTieringWorkspace() {
     var isActive = profileKey && activeProfile.type === profileKey.model && activeProfile.tier === profileKey.tier;
     return '<tr' + (isActive ? ' class="partner-tiering-current-row"' : '') + '>' +
       '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.level) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
-      '<td>' + escapeHtml(formatPartnerTieringMarginCommission(activePartnerTieringPage, tier)) + '</td>' +
+      '<td>' + renderPartnerTieringMarginCommission(activePartnerTieringPage, tier) + '</td>' +
       '<td>' + escapeHtml(tier.revenueTargetLabel || '—') + '</td>' +
       '<td>' + renderPartnerTieringCommitments(tier) + '</td>' +
       '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
