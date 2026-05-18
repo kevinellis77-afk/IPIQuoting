@@ -2714,30 +2714,35 @@
   .partner-tiering-table {
     min-width: 760px;
   }
+  .partner-tiering-margin-cell {
+    min-width: 246px;
+    white-space: normal;
+  }
   .partner-tiering-margin-pill {
     align-items: stretch;
     background: #f7faf9;
     border: 1px solid rgba(99, 171, 143, 0.24);
     border-radius: 999px;
+    box-sizing: border-box;
     display: inline-flex;
-    flex-wrap: wrap;
-    gap: 2px;
+    flex-wrap: nowrap;
+    gap: 5px;
     justify-content: center;
     max-width: 100%;
-    overflow: hidden;
-    padding: 2px;
+    padding: 3px;
     vertical-align: middle;
   }
   .partner-tiering-margin-segment {
     align-items: center;
     border-radius: 999px;
+    box-sizing: border-box;
     display: inline-flex;
-    flex: 1 1 78px;
-    gap: 5px;
+    flex: 0 1 auto;
+    gap: 8px;
     justify-content: space-between;
     line-height: 1.2;
-    min-width: 0;
-    padding: 5px 8px;
+    min-width: 112px;
+    padding: 6px 10px;
     white-space: nowrap;
   }
   .partner-tiering-margin-segment--core {
@@ -2757,6 +2762,7 @@
     color: var(--charcoal-dark);
     font-size: 12px;
     font-weight: 800;
+    margin-left: auto;
   }
   .partner-tiering-table .partner-tiering-current-row th,
   .partner-tiering-table .partner-tiering-current-row td {
@@ -8899,7 +8905,7 @@ function renderPartnerTieringWorkspace() {
     var isActive = profileKey && activeProfile.type === profileKey.model && activeProfile.tier === profileKey.tier;
     return '<tr' + (isActive ? ' class="partner-tiering-current-row"' : '') + '>' +
       '<th scope="row" class="license-features-row-header">' + escapeHtml(tier.level) + (isActive ? ' <span class="level-badge ' + escapeHtml(getProfileClassName(activeProfile)) + '">Current profile</span>' : '') + '</th>' +
-      '<td>' + renderPartnerTieringMarginCommission(activePartnerTieringPage, tier) + '</td>' +
+      '<td class="partner-tiering-margin-cell">' + renderPartnerTieringMarginCommission(activePartnerTieringPage, tier) + '</td>' +
       '<td>' + escapeHtml(tier.revenueTargetLabel || '—') + '</td>' +
       '<td>' + renderPartnerTieringCommitments(tier) + '</td>' +
       '<td>' + renderProgrammeBenefits(tier.benefits) + '</td>' +
