@@ -5125,7 +5125,7 @@ function syncTierOptionsFor(typeEl, tierEl) {
   if (!tierKeys.length) return;
   tierEl.innerHTML = tierKeys.map(function(key) {
     const tier = typeCfg.tiers[key];
-    return '<option value="' + key + '">' + tier.label + ' (' + Math.round(tier.discount * 100) + '%)</option>';
+    return '<option value="' + key + '">' + tier.label + '</option>';
   }).join('');
   tierEl.value = tierKeys.includes(current) ? current : tierKeys[0];
 }
