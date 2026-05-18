@@ -5053,11 +5053,13 @@ function getProfileDiscountForProduct(profile, product) {
     if (profile.type === 'reseller') {
       if (profile.tier === 'accredited') return 0.20;
       if (profile.tier === 'silver') return 0.25;
-      if (profile.tier === 'gold' || profile.tier === 'platinum') return 0.30;
+      if (profile.tier === 'gold') return 0.30;
+      if (profile.tier === 'platinum') return 0.35;
     }
     if (profile.type === 'msp') {
       if (profile.tier === 'silver') return 0.25;
-      if (profile.tier === 'gold' || profile.tier === 'platinum') return 0.30;
+      if (profile.tier === 'gold') return 0.35;
+      if (profile.tier === 'platinum') return 0.40;
     }
     // Consultants keep their profile default; there is no PCI-specific override.
   }
