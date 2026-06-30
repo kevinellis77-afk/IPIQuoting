@@ -106,6 +106,8 @@ const subjectSource = [
   extractFunctionDeclaration('getProfileDiscountForProduct'),
   extractFunctionDeclaration('roundCurrency'),
   extractFunctionDeclaration('getPriceForProductByProfile'),
+  extractFunctionDeclaration('isConsultantPriceListProfile'),
+  extractFunctionDeclaration('getPriceListPartnerValue'),
   extractFunctionDeclaration('getPciDiscountForProfile'),
   `function escapeHtml(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;'); }`,
   extractFunctionDeclaration('getProgrammeProfileKey'),
@@ -115,12 +117,12 @@ const subjectSource = [
   extractFunctionDeclaration('renderPartnerTieringMarginCommission'),
   extractFunctionDeclaration('formatPartnerTieringPdfMarginCommission'),
   extractFunctionDeclaration('getPartnerTieringValueHeading'),
-  'globalThis.__subject = { PRODUCTS, PARTNER_TIERING_PROGRAMME, getProfileDiscountForProduct, getPriceForProductByProfile, getPciDiscountForProfile, isPciProduct, getPartnerTieringPciMargin, renderPartnerTieringMarginCommission, formatPartnerTieringPdfMarginCommission, getPartnerTieringValueHeading };'
+  'globalThis.__subject = { PRODUCTS, PARTNER_TIERING_PROGRAMME, getProfileDiscountForProduct, getPriceForProductByProfile, isConsultantPriceListProfile, getPriceListPartnerValue, getPciDiscountForProfile, isPciProduct, getPartnerTieringPciMargin, renderPartnerTieringMarginCommission, formatPartnerTieringPdfMarginCommission, getPartnerTieringValueHeading };'
 ].join('\n\n');
 
 const sandbox = { console };
 vm.runInNewContext(subjectSource, sandbox, { filename: 'index.html extracted discount subject' });
-const { PRODUCTS, PARTNER_TIERING_PROGRAMME, getProfileDiscountForProduct, getPriceForProductByProfile, getPciDiscountForProfile, isPciProduct, getPartnerTieringPciMargin, renderPartnerTieringMarginCommission, formatPartnerTieringPdfMarginCommission, getPartnerTieringValueHeading } = sandbox.__subject;
+const { PRODUCTS, PARTNER_TIERING_PROGRAMME, getProfileDiscountForProduct, getPriceForProductByProfile, isConsultantPriceListProfile, getPriceListPartnerValue, getPciDiscountForProfile, isPciProduct, getPartnerTieringPciMargin, renderPartnerTieringMarginCommission, formatPartnerTieringPdfMarginCommission, getPartnerTieringValueHeading } = sandbox.__subject;
 
 function productBySku(sku) {
   const product = PRODUCTS.find((candidate) => candidate.id === sku);
@@ -194,6 +196,15 @@ for (const [profileInput] of documentedPciPriceExamples) {
   assertDiscount(profileInput, nonPciCatalogueRow, profileInput.discount);
   assertPartnerPrice(profileInput, nonPciCatalogueRow, (100 * (1 - profileInput.discount)).toFixed(2));
 }
+
+const consultantProfile = profile('consultant', 'consultant', 0.15);
+assert.equal(isConsultantPriceListProfile(consultantProfile), true);
+assert.equal(isConsultantPriceListProfile({ model: 'consultant', discount: 0.15 }), true);
+assert.equal(isConsultantPriceListProfile(profile('reseller', 'gold', 0.35)), false);
+assert.equal(getPriceListPartnerValue(nonPciCatalogueRow, consultantProfile, false).toFixed(2), '15.00');
+assert.equal(getPriceListPartnerValue(nonPciCatalogueRow, consultantProfile, true).toFixed(2), '100.00');
+assert.equal(getPriceListPartnerValue(nonPciCatalogueRow, profile('reseller', 'gold', 0.35), false).toFixed(2), '65.00');
+assert.equal(getPriceListPartnerValue(nonPciCatalogueRow, profile('msp', 'gold', 0.45), false).toFixed(2), '55.00');
 
 const serviceOverrideRows = [
   [profile('reseller', 'gold', 0.35), syntheticProduct('Services'), 0.20, '80.00'],
