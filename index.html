@@ -3219,7 +3219,7 @@
               <th class="sortable" data-sort-key="license" style="width:120px" id="priceListLicenseColumnHeader">License Type</th>
               <th class="sortable" data-sort-key="payment" style="width:130px" id="priceListPaymentColumnHeader">Payment Type</th>
               <th class="sortable" data-sort-key="list" style="width:130px;text-align:right">List RRP</th>
-              <th class="sortable" data-sort-key="partner" style="width:140px;text-align:right">Partner Price</th>
+              <th class="sortable" data-sort-key="partner" style="width:140px;text-align:right" id="priceListPartnerValueHeader">Partner Price</th>
               <th style="width:70px;text-align:center">Info</th>
             </tr>
           </thead>
@@ -9725,6 +9725,18 @@ function getFilteredPriceListRows(profile) {
   });
 }
 
+function isConsultantPriceListProfile(profile) {
+  return !!profile && (profile.model === 'consultant' || profile.type === 'consultant');
+}
+
+function getPriceListPartnerValue(product, profile, showRrpOnly) {
+  const base = product && product.list > 0 ? product.list : (product ? product.threshold : 0);
+  if (base <= 0) return 0;
+  if (showRrpOnly) return roundCurrency(base);
+  if (isConsultantPriceListProfile(profile)) return roundCurrency(base * (profile && profile.discount ? profile.discount : 0));
+  return getPriceForProductByProfile(product, profile);
+}
+
 function renderPartnerPriceList() {
   const body = document.getElementById('priceListBody');
   if (!body || typeof PRODUCTS === 'undefined') return;
@@ -9733,11 +9745,14 @@ function renderPartnerPriceList() {
   syncPriceListFilterOptions();
   const badge = document.getElementById('priceListProfileBadge');
   const showRrpOnly = !!document.getElementById('priceListRrpOnly')?.checked;
+  const isConsultantProfile = isConsultantPriceListProfile(profile);
+  const partnerValueHeader = document.getElementById('priceListPartnerValueHeader');
+  if (partnerValueHeader) partnerValueHeader.textContent = isConsultantProfile && !showRrpOnly ? 'Partner Commission' : 'Partner Price';
   if (badge) {
     const pciCapLabel = getPciCapLabel(profile);
     badge.textContent = showRrpOnly
       ? 'Profile: ' + profile.typeLabel + ' · ' + profile.tierLabel + ' · RRP only (no discount)'
-      : 'Profile: ' + profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + '% discount' + (pciCapLabel ? '; ' + pciCapLabel : '');
+      : 'Profile: ' + profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + (isConsultantProfile ? '% commission' : '% discount' + (pciCapLabel ? '; ' + pciCapLabel : ''));
   }
   updatePriceListSortIndicators();
   updatePriceListFilterSummary();
@@ -9760,7 +9775,7 @@ function renderPartnerPriceList() {
       block.items.forEach(function(p) {
         const normalized = getNormalizedProduct(p);
         const base = normalized.basePrice;
-        const net = showRrpOnly ? base : getPriceForProductByProfile(p, profile);
+        const net = getPriceListPartnerValue(p, profile, showRrpOnly);
         const effectiveDiscount = showRrpOnly ? 0 : getProfileDiscountForProduct(profile, p);
         const discountPill = !showRrpOnly && isPciProduct(p) && effectiveDiscount > 0 && effectiveDiscount !== profile.discount
           ? ' <span class="price-list-discount-pill">' + Math.round(effectiveDiscount * 100) + '%</span>'
@@ -9934,9 +9949,11 @@ function exportPriceListPdf() {
   const showRrpOnly = !!document.getElementById('priceListRrpOnly')?.checked;
   const generatedOn = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
   const pciCapLabel = getPciCapLabel(profile);
+  const isConsultantProfile = isConsultantPriceListProfile(profile);
+  const partnerValueHeading = isConsultantProfile && !showRrpOnly ? 'Partner Commission' : 'Partner Price';
   const titleProfile = showRrpOnly
     ? profile.typeLabel + ' · ' + profile.tierLabel + ' · RRP only'
-    : profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + '% discount' + (pciCapLabel ? '; ' + pciCapLabel : '');
+    : profile.typeLabel + ' · ' + profile.tierLabel + ' · ' + Math.round(profile.discount * 100) + (isConsultantProfile ? '% commission' : '% discount' + (pciCapLabel ? '; ' + pciCapLabel : ''));
 
   const groupedSections = groupRowsForDisplay(rows);
   const categorySections = groupedSections.map(function(section) {
@@ -9944,7 +9961,7 @@ function exportPriceListPdf() {
       const items = block.items;
       const rowsHtml = items.map(function(p) {
         const listPrice = p.list > 0 ? p.list : p.threshold;
-        const partnerPrice = showRrpOnly ? listPrice : getPriceForProductByProfile(p, profile);
+        const partnerPrice = getPriceListPartnerValue(p, profile, showRrpOnly);
         const license = getDisplayLicenseType(p);
         const payment = getDisplayPaymentType(p);
         return '<tr>' +
@@ -9959,7 +9976,7 @@ function exportPriceListPdf() {
       return '' +
         '<div class="license-block">' +
           '<div class="license-header">' + block.licenseType + ' <span>' + items.length + ' products</span></div>' +
-          '<table class="export-lines"><colgroup><col class="col-sap"><col class="col-product"><col class="col-license"><col class="col-pay"><col class="col-list"><col class="col-partner"></colgroup><thead><tr><th>SAP ID</th><th>Product</th><th>' + LABELS.licenseType + '</th><th>' + LABELS.paymentType + '</th><th class="num">List RRP</th><th class="num">Partner Price</th></tr></thead>' +
+          '<table class="export-lines"><colgroup><col class="col-sap"><col class="col-product"><col class="col-license"><col class="col-pay"><col class="col-list"><col class="col-partner"></colgroup><thead><tr><th>SAP ID</th><th>Product</th><th>' + LABELS.licenseType + '</th><th>' + LABELS.paymentType + '</th><th class="num">List RRP</th><th class="num">' + partnerValueHeading + '</th></tr></thead>' +
           '<tbody>' + rowsHtml + '</tbody></table>' +
         '</div>';
     }).join('');
@@ -10085,7 +10102,7 @@ window.addEventListener('DOMContentLoaded', initPartnerPriceList);
         <div class="help-tips">
           <div class="help-tip"><strong>Reseller</strong>Accredited 20%, Silver 30%, Gold 35%, Platinum 40%.</div>
           <div class="help-tip"><strong>MSP</strong>Silver 35%, Gold 45%, Platinum 50%.</div>
-          <div class="help-tip"><strong>Consultant</strong>Single commercial tier at 15% discount.</div>
+          <div class="help-tip"><strong>Consultant</strong>Single commercial tier at 15% commission.</div>
           <div class="help-tip"><strong>One pricing matrix</strong>The quote builder and the partner price list now use the same commercial rules, so there is no drift between views.</div>
         </div>
       </div>
